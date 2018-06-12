@@ -4,6 +4,7 @@ use lexer::Token;
 use parser::SExpr;
 use env::EnvRef;
 use closure::ClosureData;
+use closure::Runnable;
 
 pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
     match sexpr {
@@ -84,7 +85,6 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
     }
 
 
-// TODO: ask for &str instead of &SExpr
 fn call_function(op: &str, args: Vec<SExpr>, env: EnvRef) -> SExpr {
     let evaluate_args = |args: Vec<SExpr>| {
         args.into_iter()
@@ -93,12 +93,6 @@ fn call_function(op: &str, args: Vec<SExpr>, env: EnvRef) -> SExpr {
     };
 
     match op.as_ref() {
-        "+" | "-" | "*" | "/" => {
-            do_arithmetic(op, evaluate_args(args))
-        },
-        "<" | ">" | "<=" | ">=" => {
-            do_compare(op, evaluate_args(args))
-        },
         "if" => {
             let condition = args.get(0)
                 .expect("Expected a boolean or expression, found nothing");
@@ -127,59 +121,7 @@ fn call_function(op: &str, args: Vec<SExpr>, env: EnvRef) -> SExpr {
     }
 }
 
-fn do_arithmetic(op_str: &str, args: Vec<SExpr>) -> SExpr {
-    let (op, init): (fn(f64,f64) -> f64, f64) = match op_str {
-        "+" => (add, 0.0),
-        "-" => (sub, 0.0),
-        "*" => (mult, 1.0),
-        "/" => (div, 1.0),
-        _ => panic!("Expected an arithmetic operation, got {}", op_str)
-    };
 
-    // FIXME: dividing does not work as expected because of the initil value
-    let result = args.into_iter()
-        .map(|x| match x {
-            SExpr::Atom(Token::Integer(i)) => i as f64,
-            SExpr::Atom(Token::Float(f)) => f,
-            _ => panic!("Expected a number got {:#?}", x)
-        })
-        .fold(init, |x, acc| op(acc, x));
-
-    SExpr::Atom(Token::Float(result))
-}
-
-
-fn do_compare(op_str: &str, args: Vec<SExpr>) -> SExpr {
-    let result = if let (SExpr::Atom(arg1), SExpr::Atom(arg2)) = (&args[0], &args[1]) {
-        match op_str {
-            "<"  => arg1 < arg2,
-            ">"  => arg1 > arg2,
-            "<=" => arg1 <= arg2,
-            ">=" => arg1 >= arg2,
-            _ => panic!("Expected an ordering operation, got {}", op_str)
-        }
-    } else {
-        panic!("Expected an atom, found something else.");
-    };
-
-    SExpr::Atom(Token::Boolean(result))
-}
-
-fn add(x: f64, y: f64) -> f64 {
-    x + y
-}
-
-fn sub(x: f64, y: f64) -> f64 {
-    x - y
-}
-
-fn mult(x: f64, y: f64) -> f64 {
-    x * y
-}
-
-fn div(x: f64, y: f64) -> f64 {
-    x / y
-}
 
 fn to_bool(x: SExpr) -> bool {
     // Anything other than #f is treated as true.

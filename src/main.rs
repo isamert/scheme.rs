@@ -1,9 +1,11 @@
-mod env;
+#[macro_use]
 mod util;
+mod env;
 mod lexer;
 mod parser;
 mod closure;
 mod evaluator;
+mod primitives;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -12,27 +14,15 @@ use parser::SExpr;
 use env::Env;
 
 fn main() {
-    //let tokens = tokenize("
-    //(define fizzbuzz
-      //(lambda (n)
-        //(cond ((= (modulo n 15) 0) (display \"FizzBuzz\") (newline))
-              //((= (modulo n  3) 0) (display \"Fizz\")     (newline))
-              //((= (modulo n  5) 0) (display \"Buzz\")     (newline))
-              //(else (display n) (newline)))))"
-    //);
-
     let tokens = lexer::tokenize("
-(define plus 
-  (lambda (x y) (+ x y)))
+(+ (- 3 2) (/ 10 2) (* 3 4 5))
+(< 3 5)
+    ");
 
-(define for (lambda (i j f) (if (>= i j) (+ 0 0) ((f) (for (+ i 1) j f)))))
-
-(for 1 5 (lambda () (+ 1 1)))
-");
-    println!("{:#?}", tokens);
+    //println!("{:#?}", tokens);
     let sexprs = parser::parse(tokens);
-    let global_env = Env::new(Rc::new(RefCell::new(None)));
-    let global_env_ref = Rc::new(RefCell::new(Some(global_env)));
+    let global_env = Env::with_values(Env::null(), primitives::env());
+    let global_env_ref = global_env.to_ref();
 
     for (i, sexpr) in sexprs.iter().enumerate() {
         //println!("{:#?}", sexpr);

@@ -18,3 +18,17 @@ impl<I: Iterator> GentleIterator<I> for Peekable<I> {
         v.into_iter()
     }
 }
+
+#[macro_export]
+macro_rules! hashmap(
+  { $($key:expr => $value:expr),+ } => {
+    {
+      use std::collections::HashMap;
+      let mut m = HashMap::new();
+      $(
+        m.insert($key, $value);
+      )+
+      m
+    }
+ };
+);
