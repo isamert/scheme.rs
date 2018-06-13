@@ -1,10 +1,11 @@
-use std::rc::Rc;
-
 use env::Env;
 use env::EnvRef;
 use env::EnvRefT;
 use parser::SExpr;
 use evaluator;
+use evaluator::Args;
+
+type PrimitiveProcedure = fn(Args, EnvRef) -> SExpr;
 
 /// A `Procedure` may be either primitive or compound(user-defined).
 #[derive(Debug, Clone)]
@@ -15,7 +16,7 @@ pub enum ProcedureData {
 
 #[derive(Debug, Clone)]
 pub struct PrimitiveData {
-    fun: (fn(Vec<SExpr>) -> SExpr),
+    fun: PrimitiveProcedure,
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +27,8 @@ pub struct CompoundData {
 }
 
 impl ProcedureData {
+    /// Creates user defined procedure,
+    /// a `SExpr::Procedure(ProcedureData::Compound)`.
     pub fn new(params: Vec<String>, body: Vec<SExpr>, env: EnvRef) -> SExpr {
         SExpr::Procedure(ProcedureData::Compound(CompoundData {
             params: params,
@@ -34,35 +37,37 @@ impl ProcedureData {
         }))
     }
 
-    pub fn new_primitive(fun: (fn(Vec<SExpr>) -> SExpr)) -> SExpr {
+    /// Creates a primitive function,
+    /// a `SExpr::Procedure(ProcedureData::Primitive)`
+    pub fn new_primitive(fun: PrimitiveProcedure) -> SExpr {
         SExpr::Procedure(ProcedureData::Primitive(PrimitiveData {
             fun: fun
         }))
     }
 
-    pub fn run(&self, args: Vec<SExpr>) -> SExpr {
+    pub fn apply(&self, args: Args, env: EnvRef) -> SExpr {
         match self {
-            ProcedureData::Compound(x)   => x.run(args),
-            ProcedureData::Primitive(x) => x.run(args)
+            ProcedureData::Compound(x)  => x.apply(args),
+            ProcedureData::Primitive(x) => x.apply(args, env)
         }
     }
 }
 
 impl CompoundData {
-    pub fn run(&self, args: Vec<SExpr>) -> SExpr {
+    pub fn apply(&self, args: Args) -> SExpr {
         if self.params.len() != args.len() {
             panic!("Argument count is different than expected.");
         }
 
         let mut inner_env = Env::new(self.env.clone_ref()); 
-        inner_env.pack(&self.params, args);
+        inner_env.pack(&self.params, args.eval());
 
 
         // FIXME: Definitions in closureses must be at the top level
         // But this does not check it
         let mut last_expr = None;
         let env_ref = inner_env.to_ref();
-        for (i, expr) in self.body.iter().enumerate() {
+        for (_i, expr) in self.body.iter().enumerate() {
             last_expr = Some(evaluator::eval(expr, env_ref.clone_ref()));
         }
 
@@ -72,8 +77,8 @@ impl CompoundData {
 
 
 impl PrimitiveData {
-    pub fn run(&self, args: Vec<SExpr>) -> SExpr {
-        (self.fun)(args)
+    pub fn apply(&self, args: Args, env: EnvRef) -> SExpr {
+        (self.fun)(args, env)
     }
 }
 

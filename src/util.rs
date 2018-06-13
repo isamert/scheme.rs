@@ -26,7 +26,7 @@ macro_rules! environment(
         {
             use env::EnvValues;
             let mut m = EnvValues::new();
-            $(m.insert($key, $value);)+m
+            $(m.insert($key.to_string(), $value);)+m
         }
     };
 );

@@ -8,35 +8,7 @@ use parser::SExpr;
 
 pub type VarName = String;
 pub type EnvValues = HashMap<VarName, SExpr>;
-pub type EnvRef = Option<Rc<RefCell<Env>>>;
-
-pub trait EnvRefT {
-    fn clone_ref(&self) -> EnvRef;
-
-    fn borrow(&self) -> Ref<Env>;
-    fn borrow_mut(&self) -> RefMut<Env>;
-}
-
-impl EnvRefT for EnvRef {
-    fn clone_ref(&self) -> EnvRef {
-        match self {
-            None => None,
-            Some(ref x) => Some(Rc::clone(x))
-        }
-    }
-
-    fn borrow(&self) -> Ref<Env> {
-        self.as_ref() // Get a reference to Rc inside Option
-            .unwrap() // Unwrap it
-            .borrow() // Borrow RefCell
-    }
-
-    fn borrow_mut(&self) -> RefMut<Env> {
-        self.as_ref() // No need for `as_mut` call because thats what RefMut does
-            .unwrap()
-            .borrow_mut()
-    }
-}
+pub type EnvRef = Rc<RefCell<Option<Env>>>;
 
 #[derive(Debug)]
 pub struct Env {
@@ -44,11 +16,39 @@ pub struct Env {
     values: EnvValues,
 }
 
+pub trait EnvRefT {
+    fn clone_ref(&self) -> EnvRef;
+
+    fn get(&self, &str) -> SExpr;
+    fn insert(&self, String, SExpr);
+}
+
+impl EnvRefT for EnvRef {
+    fn clone_ref(&self) -> EnvRef {
+        Rc::clone(self)
+    }
+
+    fn get(&self, name: &str) -> SExpr {
+        self.borrow()
+            .as_ref()
+            .expect("Cannot find environment")
+            .get(name)
+    }
+
+    fn insert(&self, key: String, val: SExpr) {
+        self.borrow_mut()
+            .as_mut()
+            .expect("Cannot find environment")
+            .insert(key, val);
+    }
+}
+
+
 impl Env {
     /// A null environment.
     /// Used as parent environment of global environment.
     pub fn null() -> EnvRef {
-        None
+        Rc::new(RefCell::new(None))
     }
 
     /// Converts `Env` into a `EnvRef`.
@@ -57,7 +57,7 @@ impl Env {
     /// use `EnvRef::clone_ref()` which only copies the pointer,
     /// not the environment itself.
     pub fn to_ref(self) -> EnvRef {
-        Some(Rc::new(RefCell::new(self)))
+        Rc::new(RefCell::new(Some(self)))
     }
     
     pub fn new(parent: EnvRef) -> Env {
@@ -78,10 +78,7 @@ impl Env {
         if self.values.contains_key(name) {
             self.values.get(name).unwrap().clone()
         } else {
-            self.parent.as_ref()
-                .unwrap()
-                .borrow()
-                .get(name)
+            self.parent.get(name)
         }
     }
 
