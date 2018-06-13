@@ -1,4 +1,6 @@
 use std::rc::Rc;
+use std::cell::Ref;
+use std::cell::RefMut;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -6,7 +8,35 @@ use parser::SExpr;
 
 pub type VarName = String;
 pub type EnvValues = HashMap<VarName, SExpr>;
-pub type EnvRef = Rc<RefCell<Option<Env>>>;
+pub type EnvRef = Option<Rc<RefCell<Env>>>;
+
+pub trait EnvRefT {
+    fn clone_ref(&self) -> EnvRef;
+
+    fn borrow(&self) -> Ref<Env>;
+    fn borrow_mut(&self) -> RefMut<Env>;
+}
+
+impl EnvRefT for EnvRef {
+    fn clone_ref(&self) -> EnvRef {
+        match self {
+            None => None,
+            Some(ref x) => Some(Rc::clone(x))
+        }
+    }
+
+    fn borrow(&self) -> Ref<Env> {
+        self.as_ref() // Get a reference to Rc inside Option
+            .unwrap() // Unwrap it
+            .borrow() // Borrow RefCell
+    }
+
+    fn borrow_mut(&self) -> RefMut<Env> {
+        self.as_ref() // No need for `as_mut` call because thats what RefMut does
+            .unwrap()
+            .borrow_mut()
+    }
+}
 
 #[derive(Debug)]
 pub struct Env {
@@ -18,16 +48,16 @@ impl Env {
     /// A null environment.
     /// Used as parent environment of global environment.
     pub fn null() -> EnvRef {
-        Rc::new(RefCell::new(None))
+        None
     }
 
     /// Converts `Env` into a `EnvRef`.
     /// This function moves `Env` into a `RefCell`.
     /// If you need another pointer to newly created EnvRef,
-    /// use `Rc::clone(&EnvRef)` which only copies the pointer,
+    /// use `EnvRef::clone_ref()` which only copies the pointer,
     /// not the environment itself.
     pub fn to_ref(self) -> EnvRef {
-        Rc::new(RefCell::new(Some(self)))
+        Some(Rc::new(RefCell::new(self)))
     }
     
     pub fn new(parent: EnvRef) -> Env {
@@ -48,9 +78,9 @@ impl Env {
         if self.values.contains_key(name) {
             self.values.get(name).unwrap().clone()
         } else {
-            self.parent.borrow()
-                .as_ref()
+            self.parent.as_ref()
                 .unwrap()
+                .borrow()
                 .get(name)
         }
     }

@@ -1,6 +1,7 @@
 use std::vec::IntoIter;
 use std::iter::Peekable;
 
+
 pub trait GentleIterator<I: Iterator> {
     fn take_until<F>(&mut self, predicate: F) -> IntoIter<I::Item>
         where F: Fn(&I::Item) -> bool;
@@ -20,15 +21,12 @@ impl<I: Iterator> GentleIterator<I> for Peekable<I> {
 }
 
 #[macro_export]
-macro_rules! hashmap(
-  { $($key:expr => $value:expr),+ } => {
-    {
-      use std::collections::HashMap;
-      let mut m = HashMap::new();
-      $(
-        m.insert($key, $value);
-      )+
-      m
-    }
- };
+macro_rules! environment(
+    { $($key:expr => $value:expr),+ } => {
+        {
+            use env::EnvValues;
+            let mut m = EnvValues::new();
+            $(m.insert($key, $value);)+m
+        }
+    };
 );

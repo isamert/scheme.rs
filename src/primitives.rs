@@ -4,7 +4,7 @@ use procedure::ProcedureData;
 use env::EnvValues;
 
 pub fn env() -> EnvValues {
-    hashmap!{
+    environment! {
         "+".to_string() =>
             ProcedureData::new_primitive(|args| do_arithmetic(add, args)),
         "-".to_string() =>

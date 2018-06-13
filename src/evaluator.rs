@@ -1,16 +1,13 @@
-use std::rc::Rc;
-
 use lexer::Token;
 use parser::SExpr;
 use env::EnvRef;
 use procedure::ProcedureData;
+use env::EnvRefT;
 
 pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
             env.borrow_mut()
-                .as_ref()
-                .expect("Cannot find environment.")
                 .get(x)
         },
         SExpr::Atom(x) => {
@@ -39,11 +36,9 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
                             let value = xs.get(2)
                                 .expect("Expected an expression, found nothing.");
 
-                            let value_sexpr = eval(value, Rc::clone(&env));
+                            let value_sexpr = eval(value, env.clone_ref());
 
                             env.borrow_mut() // Mutable borrow RefCell
-                                .as_mut()    // Get mutable reference to Env inside Option
-                                .expect("Cannot find environment")
                                 .insert(name.to_string(), value_sexpr.clone());
 
                             value_sexpr
@@ -71,7 +66,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
                         _ => {
                             // Skip the op name
                             let args = xs[1..].to_vec();
-                            call_function(symbol, args, Rc::clone(&env))
+                            call_function(symbol, args, env.clone_ref())
                         },
                     },
                     x => {
@@ -87,7 +82,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
 fn call_function(op: &str, args: Vec<SExpr>, env: EnvRef) -> SExpr {
     let evaluate_args = |args: Vec<SExpr>| {
         args.into_iter()
-            .map(|x| eval(&x, Rc::clone(&env)))
+            .map(|x| eval(&x, env.clone_ref()))
             .collect::<Vec<SExpr>>()
     };
 
@@ -100,10 +95,10 @@ fn call_function(op: &str, args: Vec<SExpr>, env: EnvRef) -> SExpr {
             let on_false = args.get(2)
                 .expect("Expected an expression, found nothing.");
 
-            if to_bool(eval(condition, Rc::clone(&env))) {
-                eval(on_true, Rc::clone(&env))
+            if to_bool(eval(condition, env.clone_ref())) {
+                eval(on_true, env.clone_ref())
             } else {
-                eval(on_false, Rc::clone(&env))
+                eval(on_false, env.clone_ref())
             }
         },
         "quote" => {
@@ -117,8 +112,6 @@ fn call_function(op: &str, args: Vec<SExpr>, env: EnvRef) -> SExpr {
         },
         _ => { // Try to call a procedure
             let procedure = env.borrow()
-                .as_ref()
-                .expect("Cannot find environment")
                 .get(op);
             if let SExpr::Procedure(c) = procedure {
                 c.run(evaluate_args(args))

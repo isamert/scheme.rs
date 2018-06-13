@@ -7,11 +7,9 @@ mod procedure;
 mod evaluator;
 mod primitives;
 
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use parser::SExpr;
 use env::Env;
+use env::EnvRefT;
 
 fn main() {
     let tokens = lexer::tokenize("
@@ -31,12 +29,12 @@ fn main() {
 
     //println!("{:#?}", tokens);
     let sexprs = parser::parse(tokens);
-    let global_env = Env::with_values(Env::null(), primitives::env());
-    let global_env_ref = global_env.to_ref();
+    let globalenv = Env::with_values(Env::null(), primitives::env());
+    let globalenv_ref = globalenv.to_ref();
 
     for (i, sexpr) in sexprs.iter().enumerate() {
         //println!("{:#?}", sexpr);
-        let evaluated = evaluator::eval(&sexpr, Rc::clone(&global_env_ref));
+        let evaluated = evaluator::eval(&sexpr, globalenv_ref.clone_ref());
         if let SExpr::Procedure(_) = evaluated {
             println!("${}: <procedure>", i);
         } else {

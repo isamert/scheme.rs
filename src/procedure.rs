@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use env::Env;
 use env::EnvRef;
+use env::EnvRefT;
 use parser::SExpr;
 use evaluator;
 
@@ -53,7 +54,7 @@ impl CompoundData {
             panic!("Argument count is different than expected.");
         }
 
-        let mut inner_env = Env::new(Rc::clone(&self.env)); 
+        let mut inner_env = Env::new(self.env.clone_ref()); 
         inner_env.pack(&self.params, args);
 
 
@@ -62,7 +63,7 @@ impl CompoundData {
         let mut last_expr = None;
         let env_ref = inner_env.to_ref();
         for (i, expr) in self.body.iter().enumerate() {
-            last_expr = Some(evaluator::eval(expr, Rc::clone(&env_ref)));
+            last_expr = Some(evaluator::eval(expr, env_ref.clone_ref()));
         }
 
         last_expr.unwrap()
