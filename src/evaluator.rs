@@ -58,6 +58,10 @@ impl Args {
     pub fn len(&self) -> usize {
         self.vec.len()
     }
+
+    pub fn env(&self) -> EnvRef {
+        self.env.clone_ref()
+    }
 }
 
 fn call_function(op: &str, args_vec: Vec<SExpr>, env: EnvRef) -> SExpr {
@@ -67,9 +71,7 @@ fn call_function(op: &str, args_vec: Vec<SExpr>, env: EnvRef) -> SExpr {
     };
     let procedure = env.get(op);
     if let SExpr::Procedure(proc) = procedure {
-        // The second argument is not neccesarry when this `apply` calls
-        // a compound procedure. It's only needed for some primitive procedures.
-        proc.apply(args, env.clone_ref())
+        proc.apply(args)
     } else {
         panic!("Not a type to apply: {:#?}", procedure)
     }

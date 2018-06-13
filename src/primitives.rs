@@ -9,22 +9,22 @@ use env::EnvRefT;
 
 pub fn env() -> EnvValues {
     environment! {
-        "+"  => ProcedureData::new_primitive(|args, _| do_arithmetic(add, args)),
-        "-"  => ProcedureData::new_primitive(|args, _| do_arithmetic(sub, args)),
-        "*"  => ProcedureData::new_primitive(|args, _| do_arithmetic(mult, args)),
-        "/"  => ProcedureData::new_primitive(|args, _| do_arithmetic(div, args)),
-        "<"  => ProcedureData::new_primitive(|args, _| do_compare("<", args)),
-        ">"  => ProcedureData::new_primitive(|args, _| do_compare(">", args)),
-        "<=" => ProcedureData::new_primitive(|args, _| do_compare("<=", args)),
-        ">=" => ProcedureData::new_primitive(|args, _| do_compare(">=", args)),
-        "if" => ProcedureData::new_primitive(do_if),
+        "+"  => ProcedureData::new_primitive(|args| do_arithmetic(add, args)),
+        "-"  => ProcedureData::new_primitive(|args| do_arithmetic(sub, args)),
+        "*"  => ProcedureData::new_primitive(|args| do_arithmetic(mult, args)),
+        "/"  => ProcedureData::new_primitive(|args| do_arithmetic(div, args)),
+        "<"  => ProcedureData::new_primitive(|args| do_compare("<", args)),
+        ">"  => ProcedureData::new_primitive(|args| do_compare(">", args)),
+        "<=" => ProcedureData::new_primitive(|args| do_compare("<=", args)),
+        ">=" => ProcedureData::new_primitive(|args| do_compare(">=", args)),
         "define" => ProcedureData::new_primitive(do_define),
         "lambda" => ProcedureData::new_primitive(do_lambda),
-        "quote" => ProcedureData::new_primitive(do_quote)
+        "if"     => ProcedureData::new_primitive(do_if),
+        "quote"  => ProcedureData::new_primitive(do_quote)
     }
 }
 
-fn do_if(args: Args, env: EnvRef) -> SExpr {
+fn do_if(args: Args) -> SExpr {
     let condition = args.get(0)
         .expect("Expected a boolean or expression, found nothing");
     let on_true = args.get(1)
@@ -32,6 +32,7 @@ fn do_if(args: Args, env: EnvRef) -> SExpr {
     let on_false = args.get(2)
         .expect("Expected an expression, found nothing.");
 
+    let env = args.env();
     if to_bool(evaluator::eval(condition, env.clone_ref())) {
         evaluator::eval(on_true, env.clone_ref())
     } else {
@@ -39,7 +40,9 @@ fn do_if(args: Args, env: EnvRef) -> SExpr {
     }
 }
 
-fn do_define(args: Args, env: EnvRef) -> SExpr {
+fn do_define(args: Args) -> SExpr {
+    let env = args.env();
+
     let name_expr = args.get(0)
         .expect("Expected an identifier, found nothing.");
 
@@ -59,7 +62,7 @@ fn do_define(args: Args, env: EnvRef) -> SExpr {
     value_sexpr
 }
 
-fn do_lambda(args: Args, env: EnvRef) -> SExpr {
+fn do_lambda(args: Args) -> SExpr {
     let params_expr = args.get(0)
         .expect("Expected a list of parameters, found nothing.");
 
@@ -77,10 +80,10 @@ fn do_lambda(args: Args, env: EnvRef) -> SExpr {
 
     let body = args.all()[1..].to_vec();
 
-    ProcedureData::new(params, body, env.clone())
+    ProcedureData::new(params, body, args.env())
 }
 
-fn do_quote(args: Args, _env: EnvRef) -> SExpr {
+fn do_quote(args: Args) -> SExpr {
     if args.len() != 1 {
         panic!("Wrong number of arguments while using `quote`.");
     }

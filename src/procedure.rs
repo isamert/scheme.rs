@@ -5,7 +5,7 @@ use parser::SExpr;
 use evaluator;
 use evaluator::Args;
 
-type PrimitiveProcedure = fn(Args, EnvRef) -> SExpr;
+type PrimitiveProcedure = fn(Args) -> SExpr;
 
 /// A `Procedure` may be either primitive or compound(user-defined).
 #[derive(Debug, Clone)]
@@ -45,10 +45,10 @@ impl ProcedureData {
         }))
     }
 
-    pub fn apply(&self, args: Args, env: EnvRef) -> SExpr {
+    pub fn apply(&self, args: Args) -> SExpr {
         match self {
             ProcedureData::Compound(x)  => x.apply(args),
-            ProcedureData::Primitive(x) => x.apply(args, env)
+            ProcedureData::Primitive(x) => x.apply(args)
         }
     }
 }
@@ -77,8 +77,8 @@ impl CompoundData {
 
 
 impl PrimitiveData {
-    pub fn apply(&self, args: Args, env: EnvRef) -> SExpr {
-        (self.fun)(args, env)
+    pub fn apply(&self, args: Args) -> SExpr {
+        (self.fun)(args)
     }
 }
 
