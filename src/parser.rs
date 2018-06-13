@@ -2,14 +2,14 @@ use std::iter::Peekable;
 use std::vec::IntoIter;
 
 use lexer::Token;
-use closure::ClosureData;
+use procedure::ProcedureData;
 
 
 #[derive(Debug, Clone)]
 pub enum SExpr {
     Atom(Token),
     List(Vec<SExpr>),
-    Closure(ClosureData)
+    Procedure(ProcedureData)
 }
 
 pub fn parse(tokens: Vec<Token>) -> Vec<SExpr> {

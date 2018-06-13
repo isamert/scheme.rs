@@ -1,26 +1,26 @@
 use lexer::Token;
 use parser::SExpr;
-use closure::ClosureData;
+use procedure::ProcedureData;
 use env::EnvValues;
 
 pub fn env() -> EnvValues {
     hashmap!{
         "+".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_arithmetic(add, args))),
+            ProcedureData::new_primitive(|args| do_arithmetic(add, args)),
         "-".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_arithmetic(sub, args))),
+            ProcedureData::new_primitive(|args| do_arithmetic(sub, args)),
         "*".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_arithmetic(mult, args))),
+            ProcedureData::new_primitive(|args| do_arithmetic(mult, args)),
         "/".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_arithmetic(div, args))),
+            ProcedureData::new_primitive(|args| do_arithmetic(div, args)),
         "<".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_compare("<", args))),
+            ProcedureData::new_primitive(|args| do_compare("<", args)),
         ">".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_compare(">", args))),
+            ProcedureData::new_primitive(|args| do_compare(">", args)),
         "<=".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_compare("<=", args))),
+            ProcedureData::new_primitive(|args| do_compare("<=", args)),
         ">=".to_string() =>
-            SExpr::Closure(ClosureData::new_primitive(|args| do_compare(">=", args)))
+            ProcedureData::new_primitive(|args| do_compare(">=", args))
     }
 }
 

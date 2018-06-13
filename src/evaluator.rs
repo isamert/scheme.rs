@@ -3,8 +3,7 @@ use std::rc::Rc;
 use lexer::Token;
 use parser::SExpr;
 use env::EnvRef;
-use closure::ClosureData;
-use closure::Runnable;
+use procedure::ProcedureData;
 
 pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
     match sexpr {
@@ -17,7 +16,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
         SExpr::Atom(x) => {
             SExpr::Atom(x.clone())
         },
-        SExpr::Closure(_) => {
+        SExpr::Procedure(_) => {
             panic!("YOU FUCKED UP")
         },
         SExpr::List(xs) => {
@@ -67,7 +66,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
 
                             let body = xs[2..].to_vec();
 
-                            SExpr::Closure(ClosureData::new(params, body, env.clone()))
+                            ProcedureData::new(params, body, env.clone())
                         },
                         _ => {
                             // Skip the op name
@@ -107,15 +106,24 @@ fn call_function(op: &str, args: Vec<SExpr>, env: EnvRef) -> SExpr {
                 eval(on_false, Rc::clone(&env))
             }
         },
-        _ => { // Try to call a closure
-            let closure = env.borrow()
+        "quote" => {
+            if args.len() != 1 {
+                panic!("Wrong number of arguments while using `quote`.");
+            }
+
+            args.get(0)
+                .unwrap()
+                .clone()
+        },
+        _ => { // Try to call a procedure
+            let procedure = env.borrow()
                 .as_ref()
                 .expect("Cannot find environment")
                 .get(op);
-            if let SExpr::Closure(c) = closure {
+            if let SExpr::Procedure(c) = procedure {
                 c.run(evaluate_args(args))
             } else {
-                panic!("Not a type to apply: {:#?}", closure)
+                panic!("Not a type to apply: {:#?}", procedure)
             }
         }
     }

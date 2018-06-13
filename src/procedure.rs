@@ -5,57 +5,50 @@ use env::EnvRef;
 use parser::SExpr;
 use evaluator;
 
+/// A `Procedure` may be either primitive or compound(user-defined).
 #[derive(Debug, Clone)]
-pub enum ClosureData {
+pub enum ProcedureData {
     Primitive(PrimitiveData),
-    Defined(DefinedData)
+    Compound(CompoundData)
 }
 
 #[derive(Debug, Clone)]
 pub struct PrimitiveData {
-    fun: (fn(Vec<SExpr>) -> SExpr)
+    fun: (fn(Vec<SExpr>) -> SExpr),
 }
 
 #[derive(Debug, Clone)]
-pub struct DefinedData {
+pub struct CompoundData {
     params: Vec<String>,
     body: Vec<SExpr>,
     env: EnvRef
 }
 
-pub trait Runnable {
-    fn run(&self, args: Vec<SExpr>) -> SExpr;
-}
-
-
-impl ClosureData {
-    pub fn new(params: Vec<String>, body: Vec<SExpr>, env: EnvRef) -> ClosureData {
-        ClosureData::Defined(DefinedData {
+impl ProcedureData {
+    pub fn new(params: Vec<String>, body: Vec<SExpr>, env: EnvRef) -> SExpr {
+        SExpr::Procedure(ProcedureData::Compound(CompoundData {
             params: params,
             body: body,
             env: env
-        })
+        }))
     }
 
-    pub fn new_primitive(fun: (fn(Vec<SExpr>) -> SExpr)) -> ClosureData {
-        ClosureData::Primitive(PrimitiveData {
+    pub fn new_primitive(fun: (fn(Vec<SExpr>) -> SExpr)) -> SExpr {
+        SExpr::Procedure(ProcedureData::Primitive(PrimitiveData {
             fun: fun
-        })
+        }))
     }
 
-}
-
-impl Runnable for ClosureData {
-    fn run(&self, args: Vec<SExpr>) -> SExpr {
+    pub fn run(&self, args: Vec<SExpr>) -> SExpr {
         match self {
-            ClosureData::Defined(x)   => x.run(args),
-            ClosureData::Primitive(x) => x.run(args)
+            ProcedureData::Compound(x)   => x.run(args),
+            ProcedureData::Primitive(x) => x.run(args)
         }
     }
 }
 
-impl Runnable for DefinedData {
-    fn run(&self, args: Vec<SExpr>) -> SExpr {
+impl CompoundData {
+    pub fn run(&self, args: Vec<SExpr>) -> SExpr {
         if self.params.len() != args.len() {
             panic!("Argument count is different than expected.");
         }
@@ -77,8 +70,8 @@ impl Runnable for DefinedData {
 }
 
 
-impl Runnable for PrimitiveData {
-    fn run(&self, args: Vec<SExpr>) -> SExpr {
+impl PrimitiveData {
+    pub fn run(&self, args: Vec<SExpr>) -> SExpr {
         (self.fun)(args)
     }
 }
