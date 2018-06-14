@@ -33,7 +33,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             .or_else(|| parse_rparen(iter))
             .or_else(|| parse_string(iter))
             .or_else(|| parse_hash(iter))
-            .or_else(|| parse_number(iter))
             .or_else(|| parse_symbol(iter));
 
         if let Some(x) = token {
@@ -112,31 +111,23 @@ fn parse_hash(iter: &mut Peekable<Chars>) -> Option<Token> {
     }
 }
 
-fn parse_number(iter: &mut Peekable<Chars>) -> Option<Token> {
-    if !check(iter, char::is_numeric) {
-        return None
-    }
-
-    let value = iter
-        .take_until(|c| *c != ' ' && *c != ')')
-        .collect::<String>()
-        .parse::<i64>()
-        .expect("Expected a number, got something else");
-
-    Some(Token::Integer(value))
-}
-
 fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
     // Check if iter is empty or not
     if !check(iter, |_| true) {
         return None
     }
 
-    let value = iter
+    let value: String = iter
         .take_until(|c| *c != ' ' && *c != ')' && *c != '\n')
         .collect();
 
-    Some(Token::Symbol(value))
+    if is_int(&value) {
+        Some(Token::Integer(value.parse().unwrap()))
+    } else if is_float(&value) {
+        Some(Token::Float(value.parse().unwrap()))
+    } else {
+        Some(Token::Symbol(value))
+    }
 }
 
 fn check<F>(iter: &mut Peekable<Chars>, fun: F) -> bool
@@ -150,4 +141,14 @@ where F: Fn(char) -> bool {
 
 fn check_chr(iter: &mut Peekable<Chars>, chr: char) -> bool {
     check(iter, |x| x == chr)
+}
+
+fn is_int(x: &str) -> bool {
+    x.chars()
+        .all(char::is_numeric)
+}
+
+fn is_float(x: &str) -> bool {
+    x.chars()
+        .all(|x| x.is_numeric() || x == '.')
 }
