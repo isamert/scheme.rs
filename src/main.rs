@@ -13,20 +13,10 @@ use env::EnvRefT;
 
 fn main() {
     let tokens = lexer::tokenize("
-(+ (- 3 2) (/ 10 2) (* 3 4 5))
-(< 3 5)
-(quote 1)
-(define w 7)
-(if (< w 5) 3 2)
-(define z 7)
-(define a 
-  (lambda (a1 a2)
-    (define b (lambda (b1) 
-      (define c (lambda (c1) 
-        (if (> b1 c1) b1 c1)))
-      (* (c 12) a2)))
-    (+ (b 4) a2)))
-(a 2 3)
+(define a (list a b c d e f 1 2 3 4))
+(car a)
+(cdr a)
+(car (cdr (cdr (cdr a))))
     ");
 
     //println!("{:#?}", tokens);

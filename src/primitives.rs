@@ -20,25 +20,13 @@ pub fn env() -> EnvValues {
         "define" => ProcedureData::new_primitive(do_define),
         "lambda" => ProcedureData::new_primitive(do_lambda),
         "if"     => ProcedureData::new_primitive(do_if),
-        "quote"  => ProcedureData::new_primitive(do_quote)
+        "quote"  => ProcedureData::new_primitive(do_quote),
+        "list"   => ProcedureData::new_primitive(do_list),
+        "car"    => ProcedureData::new_primitive(do_car),
+        "cdr"    => ProcedureData::new_primitive(do_cdr)
     }
 }
 
-fn do_if(args: Args) -> SExpr {
-    let condition = args.get(0)
-        .expect("Expected a boolean or expression, found nothing");
-    let on_true = args.get(1)
-        .expect("Expected an expression, found nothing.");
-    let on_false = args.get(2)
-        .expect("Expected an expression, found nothing.");
-
-    let env = args.env();
-    if to_bool(evaluator::eval(condition, env.clone_ref())) {
-        evaluator::eval(on_true, env.clone_ref())
-    } else {
-        evaluator::eval(on_false, env.clone_ref())
-    }
-}
 
 fn do_define(args: Args) -> SExpr {
     let env = args.env();
@@ -83,6 +71,22 @@ fn do_lambda(args: Args) -> SExpr {
     ProcedureData::new(params, body, args.env())
 }
 
+fn do_if(args: Args) -> SExpr {
+    let condition = args.get(0)
+        .expect("Expected a boolean or expression, found nothing");
+    let on_true = args.get(1)
+        .expect("Expected an expression, found nothing.");
+    let on_false = args.get(2)
+        .expect("Expected an expression, found nothing.");
+
+    let env = args.env();
+    if to_bool(evaluator::eval(condition, env.clone_ref())) {
+        evaluator::eval(on_true, env.clone_ref())
+    } else {
+        evaluator::eval(on_false, env.clone_ref())
+    }
+}
+
 fn do_quote(args: Args) -> SExpr {
     if args.len() != 1 {
         panic!("Wrong number of arguments while using `quote`.");
@@ -93,6 +97,41 @@ fn do_quote(args: Args) -> SExpr {
         .clone()
 }
 
+fn do_list(args: Args) -> SExpr {
+    let list : Vec<SExpr> = args.all()
+        .iter()
+        .map(|x| match x {
+            x@SExpr::List(_) => evaluator::eval(x, args.env()),
+            x              => x.clone()
+        })
+        .collect();
+
+    SExpr::List(list)
+}
+
+fn do_car(args: Args) -> SExpr {
+    if args.len() != 1 {
+        panic!("Wrong argument count to car.");
+    }
+
+    let list = &args.eval()[0];
+    match list {
+        SExpr::List(x) => x[0].clone(),
+        _              => panic!("Wrong type of argument to car.")
+    }
+}
+
+fn do_cdr(args: Args) -> SExpr {
+    if args.len() != 1 {
+        panic!("Wrong argument count to cdr.");
+    }
+
+    let list = &args.eval()[0];
+    match list {
+        SExpr::List(x) => SExpr::List(x[1..].to_vec()),
+        _              => panic!("Wrong type of argument to cdr.")
+    }
+}
 
 fn do_arithmetic(op: (fn(f64,f64) -> f64), args: Args) -> SExpr {
     // FIXME: (- 5) should evaluate to -5

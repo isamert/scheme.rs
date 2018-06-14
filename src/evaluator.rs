@@ -33,6 +33,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
     }
 }
 
+#[derive(Debug)]
 pub struct Args {
     env: EnvRef,
     vec: Vec<SExpr>
