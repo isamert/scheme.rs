@@ -11,8 +11,8 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
         SExpr::Atom(x) => {
             SExpr::Atom(x.clone())
         },
-        SExpr::Procedure(_) => {
-            panic!("YOU FUCKED UP")
+        SExpr::Procedure(x) => {
+            SExpr::Procedure(x.clone())
         },
         SExpr::List(xs) => {
             let op = xs.get(0)
@@ -21,17 +21,35 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
             match op {
                 SExpr::Atom(Token::Symbol(symbol)) => {
                     // Skip the op name
-                    let args = xs[1..].to_vec();
-                    call_function(symbol, args, env.clone_ref())
+                    let args = xs[1..].to_args(&env);
+                    call_function(symbol, args)
                 },
                 x => {
-                    // Trying to use something other than a symbol as function
-                    panic!("Wrong type to apply: {:#?}", x);
+                    // Trying to use something other than a symbol as procedure
+                    // Evaluate and see if it's a procedure.
+                    let evaled = eval(x, env.clone_ref());
+                    if let SExpr::Procedure(x) = evaled {
+                        let args = xs[1..].to_args(&env);
+                        x.apply(args)
+                    } else {
+                        panic!("Wrong type to apply: {:#?}", x)
+                    }
                 }
             }
         }
     }
 }
+
+fn call_function(op: &str, args: Args) -> SExpr {
+    let procedure = args.env.get(op);
+    if let SExpr::Procedure(proc) = procedure {
+        proc.apply(args)
+    } else {
+        panic!("Not a type to apply: {:#?}", procedure)
+    }
+}
+
+
 
 #[derive(Debug)]
 pub struct Args {
@@ -72,18 +90,14 @@ impl Args {
     }
 }
 
-fn call_function(op: &str, args_vec: Vec<SExpr>, env: EnvRef) -> SExpr {
-    let args = Args {
-        env: env.clone_ref(),
-        vec: args_vec
-    };
-    let procedure = env.get(op);
-    if let SExpr::Procedure(proc) = procedure {
-        proc.apply(args)
-    } else {
-        panic!("Not a type to apply: {:#?}", procedure)
-    }
+
+trait ToArgs {
+    fn to_args(&self, env: &EnvRef) -> Args;
 }
 
 
-
+impl ToArgs for [SExpr] {
+    fn to_args(&self, env: &EnvRef) -> Args {
+        Args::new(self.to_vec(), env.clone_ref())
+    }
+}
