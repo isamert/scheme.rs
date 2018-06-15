@@ -5,10 +5,7 @@ use evaluator::Args;
 pub fn list(args: Args) -> SExpr {
     let list : Vec<SExpr> = args.all()
         .iter()
-        .map(|x| match x {
-            x@SExpr::List(_) => evaluator::eval(x, args.env()),
-            x                => x.clone()
-        })
+        .map(|x| evaluator::eval(x, args.env()))
         .collect();
 
     SExpr::List(list)
