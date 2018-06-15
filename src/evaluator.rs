@@ -41,6 +41,13 @@ pub struct Args {
 
 // FIXME: add new()
 impl Args {
+    pub fn new(vec: Vec<SExpr>, env: EnvRef) -> Args {
+        Args {
+            env: env,
+            vec: vec
+        }
+    }
+    
     pub fn get(&self, i: usize) -> Option<&SExpr> {
         self.vec.get(i)
     }
