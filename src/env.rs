@@ -17,8 +17,10 @@ pub struct Env {
 pub trait EnvRefT {
     fn clone_ref(&self) -> EnvRef;
 
-    fn get(&self, &str) -> SExpr;
+    fn get(&self, &str) -> Option<SExpr>;
     fn insert(&self, String, SExpr);
+
+    fn is_some(&self) -> bool;
 }
 
 impl EnvRefT for EnvRef {
@@ -26,7 +28,13 @@ impl EnvRefT for EnvRef {
         Rc::clone(self)
     }
 
-    fn get(&self, name: &str) -> SExpr {
+    fn is_some(&self) -> bool {
+        self.borrow()
+            .as_ref()
+            .is_some()
+    }
+
+    fn get(&self, name: &str) -> Option<SExpr> {
         self.borrow()
             .as_ref()
             .expect("Cannot find environment")
@@ -72,11 +80,15 @@ impl Env {
         }
     }
 
-    pub fn get(&self, name: &str) -> SExpr {
+    pub fn get(&self, name: &str) -> Option<SExpr> {
         if self.values.contains_key(name) {
-            self.values.get(name).unwrap().clone()
+            Some(self.values.get(name).unwrap().clone())
         } else {
-            self.parent.get(name)
+            if self.parent.is_some() {
+                self.parent.get(name)
+            } else {
+                None
+            }
         }
     }
 

@@ -7,6 +7,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
             env.get(x)
+                .expect(&format!("Unbound variable: {}", x))
         },
         SExpr::Atom(x) => {
             SExpr::Atom(x.clone())
@@ -22,7 +23,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
                 SExpr::Atom(Token::Symbol(symbol)) => {
                     // Skip the op name
                     let args = xs[1..].to_args(&env);
-                    call_function(symbol, args)
+                    call_procedure(symbol, args)
                 },
                 x => {
                     // Trying to use something other than a symbol as procedure
@@ -40,8 +41,11 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
     }
 }
 
-fn call_function(op: &str, args: Args) -> SExpr {
-    let procedure = args.env.get(op);
+fn call_procedure(op: &str, args: Args) -> SExpr {
+    let procedure = args.env
+        .get(op)
+        .expect(&format!("Unbound variable: {}", op));
+
     if let SExpr::Procedure(proc) = procedure {
         proc.apply(args)
     } else {
