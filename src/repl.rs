@@ -22,7 +22,6 @@ pub fn run(env: EnvRef) {
             println!("${} = {}", i, evaluated);
 
             // TODO: create an `args!` macro
-            // and maybe create SExpr::symbol(str), SExpr::float(f64)...
 
             // Add $i to environment so user can use the currently evaluated value
             lang::define(Args::new(

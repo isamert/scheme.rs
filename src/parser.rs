@@ -9,7 +9,34 @@ use procedure::ProcedureData;
 pub enum SExpr {
     Atom(Token),
     List(Vec<SExpr>),
-    Procedure(ProcedureData)
+    Procedure(ProcedureData),
+    Unspecified
+}
+
+impl SExpr {
+    pub fn symbol(x: &str) -> SExpr {
+        SExpr::Atom(Token::Symbol(x.to_string()))
+    }
+
+    pub fn integer(x: i64) -> SExpr {
+        SExpr::Atom(Token::Integer(x))
+    }
+
+    pub fn float(x: f64) -> SExpr {
+        SExpr::Atom(Token::Float(x))
+    }
+
+    pub fn boolean(x: bool) -> SExpr {
+        SExpr::Atom(Token::Boolean(x))
+    }
+
+    pub fn chr(x: char) -> SExpr {
+        SExpr::Atom(Token::Chr(x))
+    }
+
+    pub fn str_(x: &str) -> SExpr {
+        SExpr::Atom(Token::Str(x.to_string()))
+    }
 }
 
 pub fn parse(tokens: Vec<Token>) -> Vec<SExpr> {
