@@ -3,7 +3,7 @@ use parser::SExpr;
 use env::EnvRef;
 use env::EnvRefT;
 
-pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
+pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
             env.get(x)
@@ -14,6 +14,9 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
         },
         SExpr::Procedure(x) => {
             SExpr::Procedure(x.clone())
+        },
+        SExpr::Unspecified => {
+            SExpr::Unspecified
         },
         SExpr::List(xs) => {
             let op = xs.get(0)
@@ -28,7 +31,7 @@ pub fn eval(sexpr: &SExpr, env: EnvRef) -> SExpr {
                 x => {
                     // Trying to use something other than a symbol as procedure
                     // Evaluate and see if it's a procedure.
-                    let evaled = eval(x, env.clone_ref());
+                    let evaled = eval(x, env);
                     if let SExpr::Procedure(x) = evaled {
                         let args = xs[1..].to_args(&env);
                         x.apply(args)
@@ -57,11 +60,10 @@ fn call_procedure(op: &str, args: Args) -> SExpr {
 
 #[derive(Debug)]
 pub struct Args {
-    env: EnvRef,
+    pub env: EnvRef,
     vec: Vec<SExpr>
 }
 
-// FIXME: add new()
 impl Args {
     pub fn new(vec: Vec<SExpr>, env: EnvRef) -> Args {
         Args {
@@ -81,16 +83,12 @@ impl Args {
     // FIXME: iter -> into_iter?
     pub fn eval(&self) -> Vec<SExpr> {
         self.vec.iter()
-            .map(|x| eval(&x, self.env.clone_ref()))
+            .map(|x| eval(&x, &self.env))
             .collect::<Vec<SExpr>>()
     }
 
     pub fn len(&self) -> usize {
         self.vec.len()
-    }
-
-    pub fn env(&self) -> EnvRef {
-        self.env.clone_ref()
     }
 }
 

@@ -1,13 +1,10 @@
 use lexer::Token;
 use parser::SExpr;
-use evaluator;
 use evaluator::Args;
 use procedure::ProcedureData;
 use env::EnvRefT;
 
 pub fn define(args: Args) -> SExpr {
-    let env = args.env();
-
     let name_expr = args.get(0)
         .expect("Expected an identifier, found nothing.");
 
@@ -20,9 +17,9 @@ pub fn define(args: Args) -> SExpr {
     let value = args.get(1)
         .expect("Expected an expression, found nothing.");
 
-    let value_sexpr = evaluator::eval(value, env.clone_ref());
+    let value_sexpr = value.eval(&args.env);
 
-    env.insert(name.to_string(), value_sexpr.clone());
+    args.env.insert(name.to_string(), value_sexpr.clone());
 
     value_sexpr
 }
@@ -45,24 +42,9 @@ pub fn lambda(args: Args) -> SExpr {
 
     let body = args.all()[1..].to_vec();
 
-    ProcedureData::new(params, body, args.env())
+    ProcedureData::new(params, body, &args.env)
 }
 
-pub fn if_(args: Args) -> SExpr {
-    let condition = args.get(0)
-        .expect("Expected a boolean or expression, found nothing");
-    let on_true = args.get(1)
-        .expect("Expected an expression, found nothing.");
-    let on_false = args.get(2)
-        .expect("Expected an expression, found nothing.");
-
-    let env = args.env();
-    if to_bool(evaluator::eval(condition, env.clone_ref())) {
-        evaluator::eval(on_true, env.clone_ref())
-    } else {
-        evaluator::eval(on_false, env.clone_ref())
-    }
-}
 
 pub fn quote(args: Args) -> SExpr {
     if args.len() != 1 {
@@ -72,16 +54,4 @@ pub fn quote(args: Args) -> SExpr {
     args.get(0)
         .unwrap()
         .clone()
-}
-
-
-
-
-// TODO: wrap in a module in this file maybe?
-fn to_bool(x: SExpr) -> bool {
-    // Anything other than #f is treated as true.
-    match x {
-        SExpr::Atom(Token::Boolean(x)) => x,
-        _ => true
-    }
 }

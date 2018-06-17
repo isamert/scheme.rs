@@ -16,17 +16,19 @@ impl fmt::Display for Token {
             }
         };
         
-        match self {
-            Token::LParen     => fmt.write_str("("),
-            Token::RParen     => fmt.write_str(")"),
-            Token::Symbol(x)  => fmt.write_str(x),
-            Token::Integer(x) => fmt.write_str(&format!("{}", x)),
-            Token::Float(x)   => fmt.write_str(&format!("{}", x)),
-            Token::Boolean(x) => fmt.write_str(format_bool(x)),
-            Token::Chr(x)     => fmt.write_str(&format!("#\\{}", x)),
-            Token::Str(x)     => fmt.write_str(x),
+        let s = match self {
+            Token::LParen     => "(".to_string(),
+            Token::RParen     => ")".to_string(),
+            Token::Symbol(x)  => x.to_string(),
+            Token::Integer(x) => format!("{}", x),
+            Token::Float(x)   => format!("{}", x),
+            Token::Boolean(x) => format_bool(x).to_string(),
+            Token::Chr(x)     => format!("#\\{}", x),
+            Token::Str(x)     => x.to_string(),
         };
 
+        fmt.write_str(&s);
+        
         Ok(())
     }
 }
@@ -36,6 +38,8 @@ impl fmt::Display for SExpr {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self {
             SExpr::Atom(x) => fmt.write_str(&format!("{}", x)),
+            SExpr::Procedure(x) => fmt.write_str(&format!("{}", x)),
+            SExpr::Unspecified => fmt.write_str("<unspecified>"),
             SExpr::List(xs) => {
                 fmt.write_str(&format!("{}", Token::LParen));
 
@@ -48,7 +52,6 @@ impl fmt::Display for SExpr {
 
                 fmt.write_str(&format!("{}", Token::RParen))
             },
-            SExpr::Procedure(x) => fmt.write_str(&format!("{}", x))
         };
         Ok(())
     }

@@ -3,16 +3,20 @@ use std::vec::IntoIter;
 
 use lexer::Token;
 use procedure::ProcedureData;
+use evaluator;
+use env::EnvRef;
 
 
 #[derive(Debug, Clone)]
 pub enum SExpr {
     Atom(Token),
     List(Vec<SExpr>),
+    Pair((SExpr, SExpr)),
     Procedure(ProcedureData),
     Unspecified
 }
 
+#[allow(dead_code)]
 impl SExpr {
     pub fn symbol(x: &str) -> SExpr {
         SExpr::Atom(Token::Symbol(x.to_string()))
@@ -36,6 +40,25 @@ impl SExpr {
 
     pub fn str_(x: &str) -> SExpr {
         SExpr::Atom(Token::Str(x.to_string()))
+    }
+
+    pub fn to_bool(&self) -> bool {
+        // Anything other than #f is treated as true.
+        match self {
+            SExpr::Atom(Token::Boolean(x)) => x.clone(),
+            _ => true
+        }
+    }
+
+    pub fn is_symbol(&self, symbol: &str) -> bool {
+        match self {
+            SExpr::Atom(Token::Symbol(x)) => x == symbol,
+            _ => false
+        }
+    }
+
+    pub fn eval(&self, env: &EnvRef) -> SExpr {
+        evaluator::eval(self, env)
     }
 }
 

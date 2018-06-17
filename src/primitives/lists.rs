@@ -1,11 +1,10 @@
 use parser::SExpr;
-use evaluator;
 use evaluator::Args;
 
 pub fn list(args: Args) -> SExpr {
     let list : Vec<SExpr> = args.all()
         .iter()
-        .map(|x| evaluator::eval(x, args.env()))
+        .map(|x| x.eval(&args.env))
         .collect();
 
     SExpr::List(list)

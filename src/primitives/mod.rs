@@ -2,6 +2,7 @@ pub mod lang;
 pub mod lists;
 pub mod numeric;
 pub mod ordering;
+pub mod conditionals;
 
 use env::EnvValues;
 use procedure::ProcedureData;
@@ -19,8 +20,10 @@ pub fn env() -> EnvValues {
         "="  => ProcedureData::new_primitive(ordering::eq),
         "define" => ProcedureData::new_primitive(lang::define),
         "lambda" => ProcedureData::new_primitive(lang::lambda),
-        "if"     => ProcedureData::new_primitive(lang::if_),
         "quote"  => ProcedureData::new_primitive(lang::quote),
+        "if"     => ProcedureData::new_primitive(conditionals::if_),
+        "cond"   => ProcedureData::new_primitive(conditionals::cond),
+        "case"   => ProcedureData::new_primitive(conditionals::case),
         "list"   => ProcedureData::new_primitive(lists::list),
         "car"    => ProcedureData::new_primitive(lists::car),
         "cdr"    => ProcedureData::new_primitive(lists::cdr)

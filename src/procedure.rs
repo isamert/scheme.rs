@@ -2,7 +2,6 @@ use env::Env;
 use env::EnvRef;
 use env::EnvRefT;
 use parser::SExpr;
-use evaluator;
 use evaluator::Args;
 
 type PrimitiveProcedure = fn(Args) -> SExpr;
@@ -29,11 +28,11 @@ pub struct CompoundData {
 impl ProcedureData {
     /// Creates user defined procedure,
     /// a `SExpr::Procedure(ProcedureData::Compound)`.
-    pub fn new(params: Vec<String>, body: Vec<SExpr>, env: EnvRef) -> SExpr {
+    pub fn new(params: Vec<String>, body: Vec<SExpr>, env: &EnvRef) -> SExpr {
         SExpr::Procedure(ProcedureData::Compound(CompoundData {
             params: params,
             body: body,
-            env: env
+            env: env.clone_ref()
         }))
     }
 
@@ -68,7 +67,7 @@ impl CompoundData {
         let mut last_expr = None;
         let env_ref = inner_env.to_ref();
         for (_i, expr) in self.body.iter().enumerate() {
-            last_expr = Some(evaluator::eval(expr, env_ref.clone_ref()));
+            last_expr = Some(expr.eval(&env_ref));
         }
 
         last_expr.unwrap()
