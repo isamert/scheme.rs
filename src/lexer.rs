@@ -150,4 +150,6 @@ fn is_int(x: &str) -> bool {
 fn is_float(x: &str) -> bool {
     x.chars()
         .all(|x| x.is_numeric() || x == '.')
+        &&
+        (x.len() > 1)
 }

@@ -11,7 +11,7 @@ use env::EnvRef;
 pub enum SExpr {
     Atom(Token),
     List(Vec<SExpr>),
-    Pair((SExpr, SExpr)),
+    Pair(Box<(SExpr, SExpr)>),
     Procedure(ProcedureData),
     Unspecified
 }
@@ -78,12 +78,32 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
         Some(&Token::RParen) => panic!("Not expected a )."),
         Some(&Token::LParen) => {
             iter.next(); // Consume LParen
-            let mut list: Vec<SExpr> = vec![];
-            while iter.peek() != Some(&Token::RParen) {
-                list.push(parse_helper(iter));
+
+            // Check if empty list
+            if iter.peek() == Some(&Token::RParen) {
+                iter.next(); // Consume RParen
+                return SExpr::List(vec![]);
             }
+            
+            let head = parse_helper(iter);
+            let dotted = iter.peek() == Some(&Token::Symbol(".".to_string()));
+
+            let result = if dotted {
+                iter.next(); // Consume '.'
+                let tail = parse_helper(iter);
+                SExpr::Pair(Box::new((head, tail)))
+            } else {
+                let mut tail: Vec<SExpr> = vec![];
+                while iter.peek() != Some(&Token::RParen) {
+                    tail.push(parse_helper(iter));
+                }
+
+                tail.insert(0, head);
+                SExpr::List(tail)
+            };
+
             iter.next(); // Consume RParen
-            SExpr::List(list)
+            result
         },
         Some(_) => { 
             let y = iter.next().unwrap(); 

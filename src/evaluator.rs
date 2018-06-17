@@ -18,6 +18,9 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         SExpr::Unspecified => {
             SExpr::Unspecified
         },
+        SExpr::Pair(pair) => {
+            panic!("Evaluating dotted lists are not implemented yet!");
+        },
         SExpr::List(xs) => {
             let op = xs.get(0)
                 .expect("Expected an operator, found nothing.");

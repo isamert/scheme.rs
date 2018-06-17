@@ -14,8 +14,11 @@ pub fn run(env: EnvRef) {
 
     let mut i = 0;
     for line in stdin.lock().lines() {
-        let sexprs = parser::parse(lexer::tokenize(&line.unwrap()));
+        let tokens = lexer::tokenize(&line.unwrap());
+        println!("TOKENS: {:?}", tokens);
+        let sexprs = parser::parse(tokens);
         for sexpr in sexprs.iter() {
+            println!("NONEVALED: {}", sexpr);
             let evaluated = sexpr.eval(&env);
             println!("${} = {}", i, evaluated);
 
