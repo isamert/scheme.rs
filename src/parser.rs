@@ -109,6 +109,18 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
             iter.next();
             SExpr::List(vec![SExpr::symbol("quote"), parse_helper(iter)])
         },
+        Some(&Token::UnQuote) => {
+            iter.next();
+            SExpr::List(vec![SExpr::symbol("unquote"), parse_helper(iter)])
+        },
+        Some(&Token::QuasiQuote) => {
+            iter.next();
+            SExpr::List(vec![SExpr::symbol("quasiquote"), parse_helper(iter)])
+        },
+        Some(&Token::UnQuoteSplicing) => {
+            iter.next();
+            SExpr::List(vec![SExpr::symbol("unquote-splicing"), parse_helper(iter)])
+        },
         Some(_) => { 
             let y = iter.next().unwrap(); 
             SExpr::Atom(y) 

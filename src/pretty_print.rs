@@ -17,9 +17,12 @@ impl fmt::Display for Token {
         };
         
         let s = match self {
-            Token::LParen     => "(".to_string(),
-            Token::RParen     => ")".to_string(),
-            Token::Quote      => "'".to_string(),
+            Token::LParen          => "(".to_string(),
+            Token::RParen          => ")".to_string(),
+            Token::Quote           => "'".to_string(),
+            Token::UnQuote         => ",".to_string(),
+            Token::QuasiQuote      => "`".to_string(),
+            Token::UnQuoteSplicing => ",@".to_string(),  
             Token::Symbol(x)  => x.to_string(),
             Token::Integer(x) => format!("{}", x),
             Token::Float(x)   => format!("{}", x),

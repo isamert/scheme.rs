@@ -20,6 +20,28 @@ impl<I: Iterator> GentleIterator<I> for Peekable<I> {
     }
 }
 
+
+pub trait AndOr<U> {
+    fn and_or(self, optb: Option<U>) -> Option<U>;
+}
+
+impl<U> AndOr<U> for Option<U> {
+    /// Returns `optb` if `optb` and option is `Some`.
+    /// Returns option if `optb` is `None` and option is `Some`.
+    /// Otherwise returns None.
+    /// Basically tries to return `Some` at deepest level.
+    fn and_or(self, optb: Option<U>) -> Option<U> {
+        match self {
+            a@Some(_) => match optb {
+                b@Some(_) => b,
+                None => a
+            },
+            None => None,
+        }
+    }
+}
+
+
 #[macro_export]
 macro_rules! environment(
     { $($key:expr => $value:expr),+ } => {

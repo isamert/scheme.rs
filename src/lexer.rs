@@ -2,6 +2,7 @@ use std::iter::Peekable;
 use std::str::Chars;
 
 use util::GentleIterator;
+use util::AndOr;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub enum Token {
@@ -14,7 +15,23 @@ pub enum Token {
     Chr(char),
     Str(String),
     Quote,
-    //UnQuoteSugar
+    QuasiQuote,
+    UnQuote,
+    UnQuoteSplicing
+}
+
+impl Token {
+    fn get(chr: char) -> Token {
+        match chr {
+            '('  => Token::LParen,
+            ')'  => Token::RParen,
+            '\'' => Token::Quote,
+            '`'  => Token::QuasiQuote,
+            ','  => Token::UnQuote,
+            '@'  => Token::UnQuoteSplicing,
+            x    => Token::Chr(x),
+        }
+    }
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -30,6 +47,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
         // thats why I used or_else
         let token = parse_lparen(iter)
             .or_else(|| parse_quote(iter))
+            .or_else(|| parse_unquote(iter))
+            .or_else(|| parse_quasiquote(iter))
             .or_else(|| parse_rparen(iter))
             .or_else(|| parse_string(iter))
             .or_else(|| parse_hash(iter))
@@ -55,30 +74,24 @@ fn parse_whitespace(iter: &mut Peekable<Chars>) -> bool {
 }
 
 fn parse_quote(iter: &mut Peekable<Chars>) -> Option<Token> {
-    if !check_chr(iter, '\'') {
-        return None
-    }
+    parse_single(iter, '\'')
+}
 
-    iter.next();
-    Some(Token::Quote)
+fn parse_unquote(iter: &mut Peekable<Chars>) -> Option<Token> {
+    parse_single(iter, ',')
+        .and_or(parse_single(iter, '@'))
+}
+
+fn parse_quasiquote(iter: &mut Peekable<Chars>) -> Option<Token> {
+    parse_single(iter, '`')
 }
 
 fn parse_lparen(iter: &mut Peekable<Chars>) -> Option<Token> {
-    if !check_chr(iter, '(') {
-        return None
-    }
-
-    iter.next();
-    Some(Token::LParen)
+    parse_single(iter, '(')
 }
 
 fn parse_rparen(iter: &mut Peekable<Chars>) -> Option<Token> {
-    if !check_chr(iter, ')') {
-        return None
-    }
-
-    iter.next();
-    Some(Token::RParen)
+    parse_single(iter, ')')
 }
 
 fn parse_string(iter: &mut Peekable<Chars>) -> Option<Token> {
@@ -137,6 +150,16 @@ fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
     } else {
         Some(Token::Symbol(value))
     }
+}
+
+/// Parse a single char and return the corresponding Token
+fn parse_single(iter: &mut Peekable<Chars>, chr: char) -> Option<Token> {
+    if !check_chr(iter, chr) {
+        return None
+    }
+
+    iter.next();
+    Some(Token::get(chr))
 }
 
 fn check<F>(iter: &mut Peekable<Chars>, fun: F) -> bool
