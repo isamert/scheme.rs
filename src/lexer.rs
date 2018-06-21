@@ -13,7 +13,7 @@ pub enum Token {
     Boolean(bool),
     Chr(char),
     Str(String),
-    //QuoteSugar,
+    Quote,
     //UnQuoteSugar
 }
 
@@ -29,6 +29,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
         // or() is eagerly evaluated
         // thats why I used or_else
         let token = parse_lparen(iter)
+            .or_else(|| parse_quote(iter))
             .or_else(|| parse_rparen(iter))
             .or_else(|| parse_string(iter))
             .or_else(|| parse_hash(iter))
@@ -51,6 +52,15 @@ fn parse_whitespace(iter: &mut Peekable<Chars>) -> bool {
     } else {
         false
     }
+}
+
+fn parse_quote(iter: &mut Peekable<Chars>) -> Option<Token> {
+    if !check_chr(iter, '\'') {
+        return None
+    }
+
+    iter.next();
+    Some(Token::Quote)
 }
 
 fn parse_lparen(iter: &mut Peekable<Chars>) -> Option<Token> {
@@ -148,6 +158,7 @@ fn is_int(x: &str) -> bool {
 }
 
 fn is_float(x: &str) -> bool {
+    // Poor man's is_float
     x.chars()
         .all(|x| x.is_numeric() || x == '.')
         &&

@@ -18,7 +18,7 @@ pub fn run(env: EnvRef) {
         println!("TOKENS: {:?}", tokens);
         let sexprs = parser::parse(tokens);
         for sexpr in sexprs.iter() {
-            println!("NONEVALED: {}", sexpr);
+            println!("NONEVALED: {:?}", sexpr);
             let evaluated = sexpr.eval(&env);
             println!("${} = {}", i, evaluated);
 
@@ -26,7 +26,8 @@ pub fn run(env: EnvRef) {
 
             // Add $i to environment so user can use the currently evaluated value
             lang::define(Args::new(
-                vec![SExpr::symbol(&format!("${}", i)), evaluated],
+                vec![SExpr::symbol(&format!("${}", i)),
+                     SExpr::List(vec![SExpr::symbol("quote"), evaluated])],
                 env.clone_ref()
             ));
 

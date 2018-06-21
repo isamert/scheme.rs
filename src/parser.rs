@@ -78,7 +78,7 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
         Some(&Token::RParen) => panic!("Not expected a )."),
         Some(&Token::LParen) => {
             iter.next(); // Consume LParen
-
+            
             // Check if empty list
             if iter.peek() == Some(&Token::RParen) {
                 iter.next(); // Consume RParen
@@ -104,6 +104,10 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
 
             iter.next(); // Consume RParen
             result
+        },
+        Some(&Token::Quote) => {
+            iter.next();
+            SExpr::List(vec![SExpr::symbol("quote"), parse_helper(iter)])
         },
         Some(_) => { 
             let y = iter.next().unwrap(); 

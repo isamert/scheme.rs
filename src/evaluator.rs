@@ -18,8 +18,22 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         SExpr::Unspecified => {
             SExpr::Unspecified
         },
-        SExpr::Pair(pair) => {
-            panic!("Evaluating dotted lists are not implemented yet!");
+        SExpr::Pair(ref pair) => {
+            let head = pair.0.clone();
+            let tail = pair.1.clone();
+
+            println!("head: {} || tail {}", head, tail);
+
+            // If the tail is also a list, then flatten the pair and eval it
+            if let SExpr::List(mut xs) = tail {
+                let flatten = {
+                    xs.insert(0, head);
+                    SExpr::List(xs)
+                };
+                flatten.eval(&env)
+            } else {
+                panic!("Can not evaluate.");
+            }
         },
         SExpr::List(xs) => {
             let op = xs.get(0)

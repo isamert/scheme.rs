@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use parser::SExpr;
-
+    
 pub type VarName = String;
 pub type EnvValues = HashMap<VarName, SExpr>;
 pub type EnvRef = Rc<RefCell<Option<Env>>>;
