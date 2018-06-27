@@ -34,7 +34,7 @@ pub fn cdr(args: Args) -> SExpr {
             let result = x.get(1..)
                 .expect("The list is not big enough.")
                 .to_vec();
-                
+
             SExpr::List(result)
         },
         _ => panic!("Wrong type of argument to cdr.")

@@ -19,6 +19,7 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
             SExpr::Unspecified
         },
         SExpr::Pair(ref pair) => {
+            // FIXME: not a correct implementation
             let head = pair.0.clone();
             let tail = pair.1.clone();
 
@@ -61,7 +62,7 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
     }
 }
 
-fn call_procedure(op: &str, args: Args) -> SExpr {
+pub fn call_procedure(op: &str, args: Args) -> SExpr {
     let procedure = args.env
         .get(op)
         .expect(&format!("Unbound variable: {}", op));
@@ -73,26 +74,61 @@ fn call_procedure(op: &str, args: Args) -> SExpr {
     }
 }
 
-
+#[derive(Debug)]
+pub enum Extra {
+    QQLevel(usize),
+    Nothing
+}
 
 #[derive(Debug)]
 pub struct Args {
     pub env: EnvRef,
+    pub extra: Extra,
     vec: Vec<SExpr>
 }
 
 impl Args {
-    pub fn new(vec: Vec<SExpr>, env: EnvRef) -> Args {
+    pub fn new(vec: Vec<SExpr>, extra: Extra, env: &EnvRef) -> Args {
         Args {
-            env: env,
+            env: env.clone(),
+            extra: extra,
             vec: vec
         }
     }
-    
+
+    pub fn head(&self) -> &SExpr {
+        self.vec
+            .first()
+            .expect("Expected an argument, found nothing.")
+    }
+
+    pub fn tail(&self) -> &SExpr {
+        self.vec
+            .first()
+            .expect("Expected an argument, found nothing.")
+    }
+
+    pub fn with_head(mut self) -> Args {
+        let head = self.vec.pop()
+            .expect("Expected an argument, found nothing");
+        self.vec.clear();
+        self.vec.push(head);
+        self
+    }
+
+    pub fn with_tail(mut self) -> Args {
+        self.vec.pop();
+        self
+    }
+
+    pub fn into_all(mut self) -> Vec<SExpr> {
+        self.vec
+    }
+
     pub fn get(&self, i: usize) -> Option<&SExpr> {
         self.vec.get(i)
     }
-    
+
     pub fn all(&self) -> &Vec<SExpr> {
         &self.vec
     }
@@ -110,13 +146,13 @@ impl Args {
 }
 
 
-trait ToArgs {
+pub trait ToArgs {
     fn to_args(&self, env: &EnvRef) -> Args;
 }
 
 
 impl ToArgs for [SExpr] {
     fn to_args(&self, env: &EnvRef) -> Args {
-        Args::new(self.to_vec(), env.clone_ref())
+        Args::new(self.to_vec(), Extra::Nothing, &env)
     }
 }

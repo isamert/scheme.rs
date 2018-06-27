@@ -42,6 +42,19 @@ impl SExpr {
         SExpr::Atom(Token::Str(x.to_string()))
     }
 
+    pub fn quasiquote(mut args: Vec<SExpr>) -> SExpr {
+        args.insert(0, SExpr::symbol("quasiquote"));
+        SExpr::List(args)
+    }
+
+    pub fn quote(sexpr: SExpr) -> SExpr {
+        SExpr::List(vec![SExpr::symbol("quote"), sexpr])
+    }
+
+    pub fn unquote(sexpr: SExpr) -> SExpr {
+        SExpr::List(vec![SExpr::symbol("unquote"), sexpr])
+    }
+
     pub fn to_bool(&self) -> bool {
         // Anything other than #f is treated as true.
         match self {
@@ -78,13 +91,13 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
         Some(&Token::RParen) => panic!("Not expected a )."),
         Some(&Token::LParen) => {
             iter.next(); // Consume LParen
-            
+
             // Check if empty list
             if iter.peek() == Some(&Token::RParen) {
                 iter.next(); // Consume RParen
                 return SExpr::List(vec![]);
             }
-            
+
             let head = parse_helper(iter);
             let dotted = iter.peek() == Some(&Token::Symbol(".".to_string()));
 
@@ -121,11 +134,10 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
             iter.next();
             SExpr::List(vec![SExpr::symbol("unquote-splicing"), parse_helper(iter)])
         },
-        Some(_) => { 
-            let y = iter.next().unwrap(); 
-            SExpr::Atom(y) 
+        Some(_) => {
+            let y = iter.next().unwrap();
+            SExpr::Atom(y)
         },
         None => panic!("Expected a token, found none."),
     }
 }
-

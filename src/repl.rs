@@ -4,9 +4,8 @@ use std::io::prelude::*;
 use lexer;
 use parser;
 use parser::SExpr;
-use evaluator::Args;
+use evaluator::ToArgs;
 use env::EnvRef;
-use env::EnvRefT;
 use primitives::lang;
 
 pub fn run(env: EnvRef) {
@@ -25,11 +24,11 @@ pub fn run(env: EnvRef) {
             // TODO: create an `args!` macro
 
             // Add $i to environment so user can use the currently evaluated value
-            lang::define(Args::new(
+            lang::define(
                 vec![SExpr::symbol(&format!("${}", i)),
-                     SExpr::List(vec![SExpr::symbol("quote"), evaluated])],
-                env.clone_ref()
-            ));
+                     SExpr::List(vec![SExpr::symbol("quote"), evaluated])]
+                    .to_args(&env)
+            );
 
             i += 1;
         }
