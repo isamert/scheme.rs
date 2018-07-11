@@ -10,6 +10,7 @@ use procedure::ProcedureData;
 pub fn env() -> EnvValues {
     environment! {
         "define"      => ProcedureData::new_primitive(lang::define),
+        "set!"        => ProcedureData::new_primitive(lang::set),
         "lambda"      => ProcedureData::new_primitive(lang::lambda),
         "quote"       => ProcedureData::new_primitive(lang::quote),
         "quasiquote"  => ProcedureData::new_primitive(lang::quasiquote),

@@ -1,9 +1,10 @@
+use std::mem;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 use parser::SExpr;
-    
+
 pub type VarName = String;
 pub type EnvValues = HashMap<VarName, SExpr>;
 pub type EnvRef = Rc<RefCell<Option<Env>>>;
@@ -18,7 +19,8 @@ pub trait EnvRefT {
     fn clone_ref(&self) -> EnvRef;
 
     fn get(&self, &str) -> Option<SExpr>;
-    fn insert(&self, String, SExpr);
+    fn define(&self, String, SExpr);
+    fn set(&self, String, SExpr);
 
     fn is_some(&self) -> bool;
 }
@@ -41,11 +43,18 @@ impl EnvRefT for EnvRef {
             .get(name)
     }
 
-    fn insert(&self, key: String, val: SExpr) {
+    fn define(&self, key: String, val: SExpr) {
         self.borrow_mut()
             .as_mut()
             .expect("Cannot find environment")
-            .insert(key, val);
+            .define(key, val);
+    }
+
+    fn set(&self, key: String, val: SExpr) {
+        self.borrow_mut()
+            .as_mut()
+            .expect("Cannot find environment")
+            .set(key, val);
     }
 }
 
@@ -65,7 +74,7 @@ impl Env {
     pub fn to_ref(self) -> EnvRef {
         Rc::new(RefCell::new(Some(self)))
     }
-    
+
     pub fn new(parent: EnvRef) -> Env {
         Env {
             parent: parent,
@@ -92,13 +101,21 @@ impl Env {
         }
     }
 
-    pub fn insert(&mut self, key: String, val: SExpr) {
+    pub fn define(&mut self, key: String, val: SExpr) {
         self.values.insert(key, val);
     }
 
+    pub fn set(&mut self, key: String, val: SExpr) {
+        if let Some(x) = self.values.get_mut(&key) {
+            *x = val;
+        } else {
+            panic!("Unbound variable: {}", key);
+        }
+    }
+
     pub fn pack(&mut self, keys: &Vec<String>, vals: Vec<SExpr>) {
-        for (i, arg) in vals.into_iter().enumerate() { 
-            self.values.insert(keys[i].clone(), arg); 
+        for (i, arg) in vals.into_iter().enumerate() {
+            self.values.insert(keys[i].clone(), arg);
         }
     }
 }

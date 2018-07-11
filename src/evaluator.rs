@@ -96,6 +96,10 @@ impl Args {
         }
     }
 
+    pub fn env(&self) -> EnvRef {
+        self.env.clone()
+    }
+
     pub fn head(&self) -> &SExpr {
         self.vec
             .first()
