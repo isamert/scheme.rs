@@ -5,8 +5,12 @@ use evaluator::Extra;
 use procedure::ProcedureData;
 use env::EnvRefT;
 
+enum EnvAddType {
+    Define,
+    Set
+}
 
-fn zirt(args: Args) -> (String, SExpr) {
+fn env_add(t: EnvAddType, args: Args) -> SExpr {
     let name_expr = args.get(0)
         .expect("Expected an identifier, found nothing.");
 
@@ -19,24 +23,20 @@ fn zirt(args: Args) -> (String, SExpr) {
         .expect("Expected an expression, found nothing.");
 
     let value_sexpr = value.eval(&args.env);
+    match t {
+        EnvAddType::Define => args.env.define(id.clone(), value_sexpr),
+        EnvAddType::Set    => args.env.set(id.clone(), value_sexpr)
+    }
 
-    (id.clone(), value_sexpr)
+    SExpr::Unspecified
 }
 
 pub fn define(args: Args) -> SExpr {
-    let env = args.env();
-    let (id, value) = zirt(args);
-    env.define(id, value);
-
-    SExpr::Unspecified
+    env_add(EnvAddType::Define, args)
 }
 
 pub fn set(args: Args) -> SExpr {
-    let env = args.env();
-    let (id, value) = zirt(args);
-    env.set(id, value);
-
-    SExpr::Unspecified
+    env_add(EnvAddType::Set, args)
 }
 
 pub fn lambda(args: Args) -> SExpr {
@@ -81,7 +81,7 @@ pub fn quasiquote(args: Args) -> SExpr {
         _ => 1
     };
 
-    let env = &args.env.clone();
+    let env = &args.env();
     let args = Args::new(
         args.into_all(),
         Extra::QQLevel(level),
@@ -93,7 +93,7 @@ pub fn quasiquote(args: Args) -> SExpr {
     } else if level > 1 {
         SExpr::quasiquote(vec!(eval_unquoted(args)))
     } else {
-        panic!("haydaaaqq")
+        panic!("Wrong call to ```.")
     }
 }
 
@@ -107,7 +107,7 @@ pub fn unquote(args: Args) -> SExpr {
         _ => panic!("`unquote` is outside of `quasiquote`.")
     };
 
-    let env = args.env.clone();
+    let env = args.env();
     let arg = args.into_all().pop().unwrap();
 
     if level == 0 {
