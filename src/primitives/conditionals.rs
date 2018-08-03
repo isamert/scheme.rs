@@ -77,7 +77,25 @@ pub fn case(args: Args) -> SExpr {
         })
         .collect();
 
-    println!("{:?}", args_vec);
-
     cond(args_vec.to_args(&args.env))
+}
+
+pub fn or(args: Args) -> SExpr {
+    let env = args.env();
+    let result = args
+        .into_all()
+        .into_iter()
+        .any(|x| x.eval(&env).to_bool());
+
+    SExpr::boolean(result)
+}
+
+pub fn and(args: Args) -> SExpr {
+    let env = args.env();
+    let result = args
+        .into_all()
+        .into_iter()
+        .all(|x| x.eval(&env).to_bool());
+
+    SExpr::boolean(result)
 }

@@ -4,6 +4,7 @@ use evaluator::Args;
 use evaluator::Extra;
 use procedure::ProcedureData;
 use env::EnvRefT;
+use env::Env;
 
 enum EnvAddType {
     Define,
@@ -40,26 +41,126 @@ pub fn set(args: Args) -> SExpr {
 }
 
 pub fn lambda(args: Args) -> SExpr {
-    let params_expr = args.get(0)
-        .expect("Expected a list of parameters, found nothing.");
+    let env = args.env();
+    let (params_list, body) = args.into_split()
+        .expect("Expected a parameter list and function body, found something else");
 
-    let params = if let SExpr::List(params) = params_expr {
-        params.iter()
-            .map(|x| if let SExpr::Atom(Token::Symbol(symbol)) = x {
-                symbol.clone()
-            } else {
-                panic!("Expected a parameter name, found this: {:#?}", x);
-            })
-            .collect::<Vec<String>>()
-    } else {
-        panic!("Expected an identifier, not an expr.")
-    };
+    let params = params_list
+        .into_list()
+        .expect("Expected a parameter list, found something else.")
+        .into_iter()
+        .map(|x|
+            x.into_symbol()
+                .expect("Expected a parameter name, found this: {:#?}")) // FIXME: can't display what's found.
+        .collect::<Vec<String>>();
 
-    let body = args.all()[1..].to_vec();
-
-    ProcedureData::new(params, body, &args.env)
+    ProcedureData::new(params, body, &env)
 }
 
+pub fn let_(args: Args) -> SExpr {
+    let parent_env = args.env();
+    let (bindings, body) = args.into_split()
+        .expect("Expected a list of bindings and body, found something else.");
+
+    let env = Env::new(parent_env.clone())
+        .to_ref();
+    let bindings_list = bindings.into_list()
+        .expect("Expected a list of bindings, found something else.");
+
+    for x in bindings_list {
+        let bind = x.into_list()
+            .expect("Expected a id-expr pair, found something else.");
+
+        let id = bind.get(0)
+            .expect("Expected an identifier, found nothing")
+            .clone()
+            .into_symbol()
+            .expect("Identifier must be a symbol.");
+
+        let expr = bind.get(1)
+            .expect("Expected an expression, found nothing");
+
+        env.define(id, expr.eval(&parent_env));
+    }
+
+    let mut result = None;
+    for expr in body {
+        result = Some(expr.eval(&env));
+    }
+
+    return result
+        .expect("Let body is empty");
+}
+
+pub fn let_star(args: Args) -> SExpr {
+    let parent_env = args.env();
+    let (bindings, body) = args.into_split()
+        .expect("Expected a list of bindings and body, found something else.");
+
+    let env = Env::new(parent_env.clone())
+        .to_ref();
+    let bindings_list = bindings.into_list()
+        .expect("Expected a list of bindings, found something else.");
+
+    for x in bindings_list {
+        let bind = x.into_list()
+            .expect("Expected a id-expr pair, found something else.");
+
+        let id = bind.get(0)
+            .expect("Expected an identifier, found nothing")
+            .clone()
+            .into_symbol()
+            .expect("Identifier must be a symbol.");
+
+        let expr = bind.get(1)
+            .expect("Expected an expression, found nothing");
+
+        env.define(id, expr.eval(&env));
+    }
+
+    let mut result = None;
+    for expr in body {
+        result = Some(expr.eval(&env));
+    }
+
+    return result
+        .expect("Let body is empty");
+}
+
+pub fn let_rec(args: Args) -> SExpr {
+    let parent_env = args.env();
+    let (bindings, body) = args.into_split()
+        .expect("Expected a list of bindings and body, found something else.");
+
+    let env = Env::new(parent_env.clone())
+        .to_ref();
+    let bindings_list = bindings.into_list()
+        .expect("Expected a list of bindings, found something else.");
+
+    for x in bindings_list {
+        let bind = x.into_list()
+            .expect("Expected a id-expr pair, found something else.");
+
+        let id = bind.get(0)
+            .expect("Expected an identifier, found nothing")
+            .clone()
+            .into_symbol()
+            .expect("Identifier must be a symbol.");
+
+        let expr = bind.get(1)
+            .expect("Expected an expression, found nothing");
+
+        env.define(id, SExpr::lazy(expr.clone()));
+    }
+
+    let mut result = None;
+    for expr in body {
+        result = Some(expr.eval(&env));
+    }
+
+    return result
+        .expect("Let body is empty");
+}
 
 pub fn quote(args: Args) -> SExpr {
     if args.len() != 1 {

@@ -61,7 +61,6 @@ impl CompoundData {
         let mut inner_env = Env::new(self.env.clone_ref()); 
         inner_env.pack(&self.params, args.eval());
 
-
         // FIXME: Definitions in closureses must be at the top level
         // But this does not check it
         let mut last_expr = None;

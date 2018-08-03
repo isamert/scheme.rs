@@ -3,8 +3,9 @@ use std::str::Chars;
 
 use util::GentleIterator;
 use util::AndOr;
-
-#[derive(Debug, PartialEq, PartialOrd, Clone)]
+// FIXME: probably something is broken with PartialEq derive.
+// Float(0) and Integer(0) is not equal
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Token {
     LParen,
     RParen,
@@ -19,6 +20,19 @@ pub enum Token {
     UnQuote,
     UnQuoteSplicing
 }
+
+/*impl PartialEq for Token {
+    fn eq(&self, other: &Token) -> bool {
+        use self::Token::*;
+
+        match (self, other) {
+            (&LParen, &LParen) => true,
+            (&RParen, &RParen) => true,
+            (&Symbol(x), &Symbol(y)) => x == y,
+            (_, _) => false
+        }
+    }
+}*/
 
 impl Token {
     fn get(chr: char) -> Token {
@@ -42,7 +56,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
         if parse_whitespace(iter) {
             continue
         }
-            
+
         // or() is eagerly evaluated
         // thats why I used or_else
         let token = parse_lparen(iter)
@@ -129,7 +143,7 @@ fn parse_hash(iter: &mut Peekable<Chars>) -> Option<Token> {
         },
         None => {
             panic!("Expected something , got nothing: ....")
-        } 
+        }
     }
 }
 

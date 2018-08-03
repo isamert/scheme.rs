@@ -65,15 +65,6 @@ impl Env {
         Rc::new(RefCell::new(None))
     }
 
-    /// Converts `Env` into a `EnvRef`.
-    /// This function moves `Env` into a `RefCell`.
-    /// If you need another pointer to newly created EnvRef,
-    /// use `EnvRef::clone_ref()` which only copies the pointer,
-    /// not the environment itself.
-    pub fn to_ref(self) -> EnvRef {
-        Rc::new(RefCell::new(Some(self)))
-    }
-
     pub fn new(parent: EnvRef) -> Env {
         Env {
             parent: parent,
@@ -86,6 +77,15 @@ impl Env {
             parent: parent,
             values: values
         }
+    }
+
+    /// Converts `Env` into a `EnvRef`.
+    /// This function moves `Env` into a `RefCell`.
+    /// If you need another pointer to newly created EnvRef,
+    /// use `EnvRef::clone_ref()` which only copies the pointer,
+    /// not the environment itself.
+    pub fn to_ref(self) -> EnvRef {
+        Rc::new(RefCell::new(Some(self)))
     }
 
     pub fn get(&self, name: &str) -> Option<SExpr> {

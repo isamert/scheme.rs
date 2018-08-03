@@ -6,8 +6,14 @@ use env::EnvRefT;
 pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
-            env.get(x)
-                .expect(&format!("Unbound variable: {}", x))
+            let result = env.get(x)
+                .expect(&format!("Unbound variable: {}", x));
+
+            if result.is_lazy() {
+                result.eval(env)
+            } else {
+                result
+            }
         },
         SExpr::Atom(x) => {
             SExpr::Atom(x.clone())
@@ -17,6 +23,9 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         },
         SExpr::Unspecified => {
             SExpr::Unspecified
+        },
+        SExpr::Lazy(expr) => {
+            expr.eval(&env)
         },
         SExpr::Pair(ref pair) => {
             // FIXME: not a correct implementation
@@ -67,11 +76,15 @@ pub fn call_procedure(op: &str, args: Args) -> SExpr {
         .get(op)
         .expect(&format!("Unbound variable: {}", op));
 
-    if let SExpr::Procedure(proc) = procedure {
-        proc.apply(args)
-    } else {
-        panic!("Not a type to apply: {:#?}", procedure)
+    fn call(proc_expr: SExpr, args: Args) -> SExpr {
+        match proc_expr {
+            SExpr::Procedure(proc) => proc.apply(args),
+            SExpr::Lazy(p) => call(p.eval(&args.env), args),
+            _ => panic!("Not a type to apply: {:#?}", proc_expr)
+        }
     }
+
+    call(procedure, args)
 }
 
 #[derive(Debug)]
@@ -100,33 +113,20 @@ impl Args {
         self.env.clone()
     }
 
-    pub fn head(&self) -> &SExpr {
+    pub fn into_all(self) -> Vec<SExpr> {
         self.vec
-            .first()
-            .expect("Expected an argument, found nothing.")
     }
 
-    pub fn tail(&self) -> &SExpr {
-        self.vec
-            .first()
-            .expect("Expected an argument, found nothing.")
-    }
+    pub fn into_split(self) -> Option<(SExpr, Vec<SExpr>)> {
+        let mut iter = self.vec.into_iter();
+        let head = iter.next();
+        let tail = iter.collect();
 
-    pub fn with_head(mut self) -> Args {
-        let head = self.vec.pop()
-            .expect("Expected an argument, found nothing");
-        self.vec.clear();
-        self.vec.push(head);
-        self
-    }
-
-    pub fn with_tail(mut self) -> Args {
-        self.vec.pop();
-        self
-    }
-
-    pub fn into_all(mut self) -> Vec<SExpr> {
-        self.vec
+        if head.is_some() {
+            Some((head.unwrap(), tail))
+        } else {
+            None
+        }
     }
 
     pub fn get(&self, i: usize) -> Option<&SExpr> {
@@ -142,6 +142,15 @@ impl Args {
         self.vec.iter()
             .map(|x| eval(&x, &self.env))
             .collect::<Vec<SExpr>>()
+    }
+
+    pub fn map<F>(mut self, mut f: F) -> Args
+    where F: FnMut(SExpr) -> SExpr {
+        self.vec = self.vec.into_iter()
+            .map(|x| f(x))
+            .collect::<Vec<SExpr>>();
+
+        self
     }
 
     pub fn len(&self) -> usize {
@@ -160,3 +169,6 @@ impl ToArgs for [SExpr] {
         Args::new(self.to_vec(), Extra::Nothing, &env)
     }
 }
+
+
+

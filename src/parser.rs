@@ -13,6 +13,7 @@ pub enum SExpr {
     List(Vec<SExpr>),
     Pair(Box<(SExpr, SExpr)>),
     Procedure(ProcedureData),
+    Lazy(Box<SExpr>),
     Unspecified
 }
 
@@ -55,6 +56,10 @@ impl SExpr {
         SExpr::List(vec![SExpr::symbol("unquote"), sexpr])
     }
 
+    pub fn lazy(x: SExpr) -> SExpr {
+        SExpr::Lazy(Box::new(x))
+    }
+
     pub fn to_bool(&self) -> bool {
         // Anything other than #f is treated as true.
         match self {
@@ -67,6 +72,27 @@ impl SExpr {
         match self {
             SExpr::Atom(Token::Symbol(x)) => x == symbol,
             _ => false
+        }
+    }
+
+    pub fn is_lazy(&self) -> bool {
+        match self {
+            SExpr::Lazy(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn into_symbol(self) -> Option<String> {
+        match self {
+            SExpr::Atom(Token::Symbol(x)) => Some(x),
+            _ => None
+        }
+    }
+
+    pub fn into_list(self) -> Option<Vec<SExpr>> {
+        match self {
+            SExpr::List(x) => Some(x),
+            _ => None
         }
     }
 

@@ -44,6 +44,7 @@ impl fmt::Display for SExpr {
             SExpr::Procedure(x) => fmt.write_str(&format!("{}", x)),
             SExpr::Unspecified => fmt.write_str("<unspecified>"),
             SExpr::Pair(x) => fmt.write_str(&format!("({} . {})", x.0, x.1)),
+            SExpr::Lazy(x) => fmt.write_str(&format!("Lazy {}", x)),
             SExpr::List(xs) => {
                 fmt.write_str(&format!("{}", Token::LParen));
 
