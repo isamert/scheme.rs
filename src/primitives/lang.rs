@@ -13,23 +13,45 @@ enum EnvAddType {
 }
 
 fn env_add(t: EnvAddType, args: Args) -> SExpr {
+    let env = args.env();
     let name_expr = args.get(0)
-        .expect("Expected an identifier, found nothing.");
+        .expect("Expected an identifier, found nothing.")
+        .clone();
 
-    let id = match name_expr {
-        SExpr::Atom(Token::Symbol(id)) => id,
+    let (id, value) = match name_expr {
+        SExpr::Atom(Token::Symbol(id)) => {
+            let value = args.get(1)
+                .expect("Expected an expression, found nothing.");
+
+            let value_sexpr = value.eval(&args.env);
+
+            (id.clone(), value_sexpr)
+        },
+        SExpr::List(_) => {
+            let (header, body) = args.into_split()
+                .expect("");
+
+            let (id, param_list) = header
+                .into_split()
+                .expect("");
+
+            let params = param_list
+                .into_iter()
+                .map(|x|
+                     x.into_symbol()
+                     .expect("Expected a parameter name, found this: {:#?}"))
+                .collect();
+
+            (id.into_symbol().unwrap(), ProcedureData::new(params, body, &env))
+        },
         _ => panic!("Expected an identifier, not an expr.")
     };
 
-    let value = args.get(1)
-        .expect("Expected an expression, found nothing.");
 
-    let value_sexpr = value.eval(&args.env);
     match t {
-        EnvAddType::Define => args.env.define(id.clone(), value_sexpr),
-        EnvAddType::Set    => args.env.set(id.clone(), value_sexpr)
+        EnvAddType::Define => env.define(id.clone(), value),
+        EnvAddType::Set    => env.set(id.clone(), value)
     }
-
     SExpr::Unspecified
 }
 
@@ -128,7 +150,7 @@ pub fn quasiquote(args: Args) -> SExpr {
     };
 
     let env = &args.env();
-    let args = Args::new(
+    let args = Args::new_with_extra(
         args.into_all(),
         Extra::QQLevel(level),
         &env
@@ -159,7 +181,7 @@ pub fn unquote(args: Args) -> SExpr {
     if level == 0 {
         arg.eval(&env)
     } else if level > 0 {
-        let args = Args::new(vec![arg], Extra::QQLevel(level), &env);
+        let args = Args::new_with_extra(vec![arg], Extra::QQLevel(level), &env);
         SExpr::unquote(eval_unquoted(args))
     } else {
         panic!("Wrong call to `,`.")
@@ -178,17 +200,17 @@ pub fn eval_unquoted(args: Args) -> SExpr {
     match arg {
         SExpr::List(xs) => match xs[0] {
             SExpr::Atom(Token::Symbol(ref x)) if x.as_str() == "unquote" => {
-                unquote(Args::new(xs[1..].to_vec(), Extra::QQLevel(level), &args.env))
+                unquote(Args::new_with_extra(xs[1..].to_vec(), Extra::QQLevel(level), &args.env))
             },
             SExpr::Atom(Token::Symbol(ref x)) if x.as_str() == "quasiquote" => {
-                quasiquote(Args::new(xs[1..].to_vec(), Extra::QQLevel(level), &args.env))
+                quasiquote(Args::new_with_extra(xs[1..].to_vec(), Extra::QQLevel(level), &args.env))
             },
             SExpr::List(ref xs2) => {
-                SExpr::List(vec![eval_unquoted(Args::new(vec![SExpr::List(xs2.clone())], Extra::QQLevel(level), &args.env))])
+                SExpr::List(vec![eval_unquoted(Args::new_with_extra(vec![SExpr::List(xs2.clone())], Extra::QQLevel(level), &args.env))])
             },
             _ => {
                 let result = xs.iter()
-                    .map(|x| eval_unquoted(Args::new(vec![x.clone()], Extra::QQLevel(level), &args.env)))
+                    .map(|x| eval_unquoted(Args::new_with_extra(vec![x.clone()], Extra::QQLevel(level), &args.env)))
                     .collect();
                 SExpr::List(result)
             }

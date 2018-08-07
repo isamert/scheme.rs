@@ -68,6 +68,7 @@ impl SExpr {
         }
     }
 
+    // Checks
     pub fn is_symbol(&self, symbol: &str) -> bool {
         match self {
             SExpr::Atom(Token::Symbol(x)) => x == symbol,
@@ -82,6 +83,7 @@ impl SExpr {
         }
     }
 
+    // Transforms
     pub fn into_symbol(self) -> Option<String> {
         match self {
             SExpr::Atom(Token::Symbol(x)) => Some(x),
@@ -91,7 +93,22 @@ impl SExpr {
 
     pub fn into_list(self) -> Option<Vec<SExpr>> {
         match self {
-            SExpr::List(x) => Some(x),
+            SExpr::List(xs) => Some(xs),
+            _ => None
+        }
+    }
+
+    // Transform operations
+    pub fn into_split(self) -> Option<(SExpr, Vec<SExpr>)> {
+        match self {
+            SExpr::List(xs) => {
+                let mut iter = xs.into_iter();
+                let head = iter.next()
+                    .expect("");
+                let tail = iter.collect();
+
+                Some((head, tail))
+            }
             _ => None
         }
     }

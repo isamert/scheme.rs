@@ -101,10 +101,18 @@ pub struct Args {
 }
 
 impl Args {
-    pub fn new(vec: Vec<SExpr>, extra: Extra, env: &EnvRef) -> Args {
+    pub fn new_with_extra(vec: Vec<SExpr>, extra: Extra, env: &EnvRef) -> Args {
         Args {
             env: env.clone(),
             extra: extra,
+            vec: vec
+        }
+    }
+
+    pub fn new(vec: Vec<SExpr>, env: &EnvRef) -> Args {
+        Args {
+            env: env.clone(),
+            extra: Extra::Nothing,
             vec: vec
         }
     }
@@ -166,9 +174,6 @@ pub trait ToArgs {
 
 impl ToArgs for [SExpr] {
     fn to_args(&self, env: &EnvRef) -> Args {
-        Args::new(self.to_vec(), Extra::Nothing, &env)
+        Args::new(self.to_vec(), &env)
     }
 }
-
-
-
