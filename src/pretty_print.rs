@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::Write;
 
 use lexer::Token;
 use parser::SExpr;
@@ -25,6 +26,7 @@ impl fmt::Display for Token {
             Token::Symbol(x)  => x.to_string(),
             Token::Integer(x) => format!("{}", x),
             Token::Float(x)   => format!("{}", x),
+            Token::Fraction(x)   => format!("{}/{}", x.n, x.d),
             Token::Boolean(x) => format_bool(x).to_string(),
             Token::Chr(x)     => format!("#\\{}", x),
             Token::Str(x)     => x.to_string(),
@@ -45,18 +47,11 @@ impl fmt::Display for SExpr {
             SExpr::Unspecified => fmt.write_str("<unspecified>"),
             SExpr::Pair(x) => fmt.write_str(&format!("({} . {})", x.0, x.1)),
             SExpr::Lazy(x) => fmt.write_str(&format!("Lazy {}", x)),
-            SExpr::List(xs) => {
-                fmt.write_str(&format!("{}", Token::LParen));
-
-                let mut sp = "";
-                for x in xs {
-                    fmt.write_str(sp);
-                    fmt.write_str(&format!("{}", x));
-                    sp = " ";
-                }
-
-                fmt.write_str(&format!("{}", Token::RParen))
+            SExpr::Vector(xs) => {
+                fmt.write_char('#');
+                write_list(fmt, xs)
             },
+            SExpr::List(xs) => write_list(fmt, xs),
         };
         Ok(())
     }
@@ -88,4 +83,18 @@ impl fmt::Display for PrimitiveData {
         fmt.write_str(&format!("#<primitive-procedure {:?}>", self as *const _));
         Ok(())
     }
+}
+
+#[allow(unused_must_use)]
+fn write_list(fmt: &mut fmt::Formatter, xs: &[SExpr]) -> Result<(), fmt::Error> {
+    fmt.write_str(&format!("{}", Token::LParen));
+
+    let mut sp = "";
+    for x in xs {
+        fmt.write_str(sp);
+        fmt.write_str(&format!("{}", x));
+        sp = " ";
+    }
+
+    fmt.write_str(&format!("{}", Token::RParen))
 }

@@ -1,4 +1,5 @@
 use parser::SExpr;
+use parser::SExprs;
 use evaluator::Args;
 use evaluator::ToArgs;
 use env::EnvRefT;
@@ -64,7 +65,7 @@ pub fn cond(args: Args) -> SExpr {
 
 pub fn case(args: Args) -> SExpr {
     let test = args.get(0).unwrap();
-    let args_vec: Vec<SExpr> = args.all()
+    let args_vec: SExprs = args.all()
         .iter()
         .skip(1)
         .map(|clause| {

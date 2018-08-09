@@ -67,5 +67,3 @@ pub fn calc(op_str: char, args: Args) -> SExpr {
         (a,b) => panic!("At least one of these is not a number: {}, {}", a, b)
     })
 }
-
-

@@ -1,6 +1,7 @@
 pub mod lang;
 pub mod lists;
 pub mod numeric;
+pub mod equivalence;
 pub mod ordering;
 pub mod conditionals;
 
@@ -18,6 +19,10 @@ pub fn env() -> EnvValues {
         "quote"       => ProcedureData::new_primitive(lang::quote),
         "quasiquote"  => ProcedureData::new_primitive(lang::quasiquote),
         "unquote"     => ProcedureData::new_primitive(lang::unquote),
+
+        "eqv?"   => ProcedureData::new_primitive(equivalence::eqv),
+        "eq?"    => ProcedureData::new_primitive(equivalence::eq),
+        "equal?" => ProcedureData::new_primitive(equivalence::equal),
 
         "+"  => ProcedureData::new_primitive(|args| numeric::calc('+', args)),
         "-"  => ProcedureData::new_primitive(|args| numeric::calc('-', args)),

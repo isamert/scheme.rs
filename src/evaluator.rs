@@ -1,5 +1,6 @@
 use lexer::Token;
 use parser::SExpr;
+use parser::SExprs;
 use env::EnvRef;
 use env::EnvRefT;
 
@@ -12,7 +13,7 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
             if result.is_lazy() {
                 result.eval(env)
             } else {
-                result
+                result.clone()
             }
         },
         SExpr::Atom(x) => {
@@ -27,8 +28,11 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         SExpr::Lazy(expr) => {
             expr.eval(&env)
         },
+        SExpr::Vector(vec) => {
+            SExpr::Vector(vec.clone())
+        },
         SExpr::Pair(ref pair) => {
-            // FIXME: not a correct implementation
+            // FIXME: not a correct implementation at all
             let head = pair.0.clone();
             let tail = pair.1.clone();
 
@@ -74,7 +78,8 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
 pub fn call_procedure(op: &str, args: Args) -> SExpr {
     let procedure = args.env
         .get(op)
-        .expect(&format!("Unbound variable: {}", op));
+        .expect(&format!("Unbound variable: {}", op))
+        .clone();
 
     fn call(proc_expr: SExpr, args: Args) -> SExpr {
         match proc_expr {
@@ -97,11 +102,11 @@ pub enum Extra {
 pub struct Args {
     pub env: EnvRef,
     pub extra: Extra,
-    vec: Vec<SExpr>
+    vec: SExprs
 }
 
 impl Args {
-    pub fn new_with_extra(vec: Vec<SExpr>, extra: Extra, env: &EnvRef) -> Args {
+    pub fn new_with_extra(vec: SExprs, extra: Extra, env: &EnvRef) -> Args {
         Args {
             env: env.clone(),
             extra: extra,
@@ -109,7 +114,7 @@ impl Args {
         }
     }
 
-    pub fn new(vec: Vec<SExpr>, env: &EnvRef) -> Args {
+    pub fn new(vec: SExprs, env: &EnvRef) -> Args {
         Args {
             env: env.clone(),
             extra: Extra::Nothing,
@@ -121,11 +126,11 @@ impl Args {
         self.env.clone()
     }
 
-    pub fn into_all(self) -> Vec<SExpr> {
+    pub fn into_all(self) -> SExprs {
         self.vec
     }
 
-    pub fn into_split(self) -> Option<(SExpr, Vec<SExpr>)> {
+    pub fn into_split(self) -> Option<(SExpr, SExprs)> {
         let mut iter = self.vec.into_iter();
         let head = iter.next();
         let tail = iter.collect();
@@ -141,22 +146,22 @@ impl Args {
         self.vec.get(i)
     }
 
-    pub fn all(&self) -> &Vec<SExpr> {
+    pub fn all(&self) -> &SExprs {
         &self.vec
     }
 
     // FIXME: iter -> into_iter?
-    pub fn eval(&self) -> Vec<SExpr> {
+    pub fn eval(&self) -> SExprs {
         self.vec.iter()
             .map(|x| eval(&x, &self.env))
-            .collect::<Vec<SExpr>>()
+            .collect::<SExprs>()
     }
 
     pub fn map<F>(mut self, mut f: F) -> Args
     where F: FnMut(SExpr) -> SExpr {
         self.vec = self.vec.into_iter()
             .map(|x| f(x))
-            .collect::<Vec<SExpr>>();
+            .collect::<SExprs>();
 
         self
     }

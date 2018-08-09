@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use parser::SExpr;
+use parser::SExprs;
 
 pub type VarName = String;
 pub type EnvValues = HashMap<VarName, SExpr>;
@@ -112,7 +113,7 @@ impl Env {
         }
     }
 
-    pub fn pack(&mut self, keys: &Vec<String>, vals: Vec<SExpr>) {
+    pub fn pack(&mut self, keys: &Vec<String>, vals: SExprs) {
         for (i, arg) in vals.into_iter().enumerate() {
             self.values.insert(keys[i].clone(), arg);
         }

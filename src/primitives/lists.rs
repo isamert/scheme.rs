@@ -1,8 +1,9 @@
 use parser::SExpr;
+use parser::SExprs;
 use evaluator::Args;
 
 pub fn list(args: Args) -> SExpr {
-    let list : Vec<SExpr> = args.all()
+    let list : SExprs = args.all()
         .iter()
         .map(|x| x.eval(&args.env))
         .collect();

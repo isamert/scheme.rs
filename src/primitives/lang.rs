@@ -81,8 +81,7 @@ pub fn lambda(args: Args) -> SExpr {
 }
 
 pub fn let_generic<F>(args: Args, mut eval_expr: F) -> SExpr
-where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SExpr)
-       {
+where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SExpr) {
     let parent_env = args.env();
     let (bindings, body) = args.into_split()
         .expect("Expected a list of bindings and body, found something else.");

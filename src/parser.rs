@@ -1,20 +1,55 @@
 use std::iter::Peekable;
 use std::vec::IntoIter;
+use std::ops::Deref;
 
 use lexer::Token;
 use procedure::ProcedureData;
 use evaluator;
 use env::EnvRef;
+use util;
 
+pub type SExprs = Vec<SExpr>;
+
+// TODO: needs huge refactoring
+#[derive(Debug, Clone)]
+pub struct Expr {
+    sexpr: SExpr,
+    data: usize
+}
+
+impl Deref for Expr {
+    type Target = SExpr;
+
+    fn deref(&self) -> &SExpr {
+        &self.sexpr
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum SExpr {
     Atom(Token),
-    List(Vec<SExpr>),
+    List(SExprs),
+    Vector(Vec<SExpr>),
     Pair(Box<(SExpr, SExpr)>),
     Procedure(ProcedureData),
     Lazy(Box<SExpr>),
     Unspecified
+}
+
+impl PartialEq for SExpr {
+    fn eq(&self, other: &SExpr) -> bool {
+        use self::SExpr::*;
+
+        match (self, other) {
+            (Atom(t1), Atom(t2)) => t1 == t2,
+            (List(xs), List(ys)) => xs == ys,
+            (Pair(x), Pair(y)) => x == y,
+            (Procedure(x), Procedure(y)) => false, // FIXME: its not actually comparing real pointers, only compares the copies of the original so it's false everytime
+            (Lazy(_x), Lazy(_y)) => panic!("This needs more thinking."),
+            (Unspecified, Unspecified) => true,
+            (_a, _b) => false
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -43,7 +78,7 @@ impl SExpr {
         SExpr::Atom(Token::Str(x.to_string()))
     }
 
-    pub fn quasiquote(mut args: Vec<SExpr>) -> SExpr {
+    pub fn quasiquote(mut args: SExprs) -> SExpr {
         args.insert(0, SExpr::symbol("quasiquote"));
         SExpr::List(args)
     }
@@ -91,7 +126,7 @@ impl SExpr {
         }
     }
 
-    pub fn into_list(self) -> Option<Vec<SExpr>> {
+    pub fn into_list(self) -> Option<SExprs> {
         match self {
             SExpr::List(xs) => Some(xs),
             _ => None
@@ -99,7 +134,7 @@ impl SExpr {
     }
 
     // Transform operations
-    pub fn into_split(self) -> Option<(SExpr, Vec<SExpr>)> {
+    pub fn into_split(self) -> Option<(SExpr, SExprs)> {
         match self {
             SExpr::List(xs) => {
                 let mut iter = xs.into_iter();
@@ -118,9 +153,9 @@ impl SExpr {
     }
 }
 
-pub fn parse(tokens: Vec<Token>) -> Vec<SExpr> {
+pub fn parse(tokens: Vec<Token>) -> SExprs {
     let mut iter = tokens.into_iter().peekable();
-    let mut exprs: Vec<SExpr> = vec![];
+    let mut exprs: SExprs = vec![];
 
     while let Some(_) = iter.peek() {
         exprs.push(parse_helper(&mut iter));
@@ -149,7 +184,7 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
                 let tail = parse_helper(iter);
                 SExpr::Pair(Box::new((head, tail)))
             } else {
-                let mut tail: Vec<SExpr> = vec![];
+                let mut tail: SExprs = vec![];
                 while iter.peek() != Some(&Token::RParen) {
                     tail.push(parse_helper(iter));
                 }

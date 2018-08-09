@@ -3,14 +3,15 @@ use std::str::Chars;
 
 use util::GentleIterator;
 use util::AndOr;
-// FIXME: probably something is broken with PartialEq derive.
-// Float(0) and Integer(0) is not equal
+use util::Fraction;
+
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Token {
     LParen,
     RParen,
     Symbol(String),
     Integer(i64),
+    Fraction(Fraction),
     Float(f64),
     Boolean(bool),
     Chr(char),
@@ -21,18 +22,6 @@ pub enum Token {
     UnQuoteSplicing
 }
 
-/*impl PartialEq for Token {
-    fn eq(&self, other: &Token) -> bool {
-        use self::Token::*;
-
-        match (self, other) {
-            (&LParen, &LParen) => true,
-            (&RParen, &RParen) => true,
-            (&Symbol(x), &Symbol(y)) => x == y,
-            (_, _) => false
-        }
-    }
-}*/
 
 impl Token {
     fn get(chr: char) -> Token {
@@ -78,6 +67,9 @@ pub fn tokenize(input: &str) -> Vec<Token> {
     tokens
 }
 
+//
+// Parsers
+//
 fn parse_whitespace(iter: &mut Peekable<Chars>) -> bool {
     if check_chr(iter, ' ') || check_chr(iter, '\n') {
         iter.next();
@@ -138,8 +130,12 @@ fn parse_hash(iter: &mut Peekable<Chars>) -> Option<Token> {
                 .expect("Expected a char, got nothing.");
             Some(Token::Chr(value))
         },
+        Some('(') => {
+            // Return Token::VectorOpener ?
+            panic!("Not yet implemented.")
+        }
         Some(c) => {
-            panic!("Expected #t, #f or #\\<char> got: #{}", c)
+            panic!("Expected #t, #f, #(...) or #\\<char> got: #{}", c)
         },
         None => {
             panic!("Expected something , got nothing: ....")
@@ -161,6 +157,13 @@ fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
         Some(Token::Integer(value.parse().unwrap()))
     } else if is_float(&value) {
         Some(Token::Float(value.parse().unwrap()))
+    } else if is_fraction(&value) {
+        let f = value.parse::<Fraction>().unwrap();
+        if f.is_int() {
+            Some(Token::Integer(f.n))
+        } else {
+            Some(Token::Fraction(f))
+        }
     } else {
         Some(Token::Symbol(value))
     }
@@ -176,6 +179,9 @@ fn parse_single(iter: &mut Peekable<Chars>, chr: char) -> Option<Token> {
     Some(Token::get(chr))
 }
 
+//
+// Helper functions
+//
 fn check<F>(iter: &mut Peekable<Chars>, fun: F) -> bool
 where F: Fn(char) -> bool {
     if let Some(&x) = iter.peek() {
@@ -194,8 +200,16 @@ fn is_int(x: &str) -> bool {
         .all(char::is_numeric)
 }
 
+fn is_fraction(x: &str) -> bool {
+    // FIXME: Poor man's is_float
+    x.chars()
+        .all(|x| x.is_numeric() || x == '/')
+        &&
+        (x.len() > 1)
+}
+
 fn is_float(x: &str) -> bool {
-    // Poor man's is_float
+    // FIXME: Poor man's is_float
     x.chars()
         .all(|x| x.is_numeric() || x == '.')
         &&

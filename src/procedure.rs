@@ -2,6 +2,7 @@ use env::Env;
 use env::EnvRef;
 use env::EnvRefT;
 use parser::SExpr;
+use parser::SExprs;
 use evaluator::Args;
 
 type PrimitiveProcedure = fn(Args) -> SExpr;
@@ -21,14 +22,14 @@ pub struct PrimitiveData {
 #[derive(Debug, Clone)]
 pub struct CompoundData {
     params: Vec<String>,
-    body: Vec<SExpr>,
+    body: SExprs,
     env: EnvRef
 }
 
 impl ProcedureData {
     /// Creates user defined procedure,
     /// a `SExpr::Procedure(ProcedureData::Compound)`.
-    pub fn new(params: Vec<String>, body: Vec<SExpr>, env: &EnvRef) -> SExpr {
+    pub fn new(params: Vec<String>, body: SExprs, env: &EnvRef) -> SExpr {
         SExpr::Procedure(ProcedureData::Compound(CompoundData {
             params: params,
             body: body,
@@ -58,11 +59,9 @@ impl CompoundData {
             panic!("Argument count is different than expected.");
         }
 
-        let mut inner_env = Env::new(self.env.clone_ref()); 
+        let mut inner_env = Env::new(self.env.clone_ref());
         inner_env.pack(&self.params, args.eval());
 
-        // FIXME: Definitions in closureses must be at the top level
-        // But this does not check it
         let mut last_expr = None;
         let env_ref = inner_env.to_ref();
         for (_i, expr) in self.body.iter().enumerate() {
@@ -79,4 +78,3 @@ impl PrimitiveData {
         (self.fun)(args)
     }
 }
-

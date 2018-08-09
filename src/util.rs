@@ -1,6 +1,7 @@
 use std::vec::IntoIter;
 use std::iter::Peekable;
-
+use std::str::FromStr;
+use std::num::ParseIntError; 
 
 pub trait GentleIterator<I: Iterator> {
     fn take_until<F>(&mut self, predicate: F) -> IntoIter<I::Item>
@@ -41,6 +42,56 @@ impl<U> AndOr<U> for Option<U> {
     }
 }
 
+fn gcd(mut m: i64, mut n: i64) -> i64 {
+    while m != 0 {
+        let old_m = m;
+        m = n % m;
+        n = old_m;
+    }
+    n.abs()
+}
+#[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
+pub struct Fraction {
+    pub n: i64,
+    pub d: i64
+}
+
+impl Fraction {
+    pub fn new(n: i64, d: i64) -> Self {
+        if d == 0 {
+            panic!("Divide by zero dude!") }
+
+        if d < 0 {
+            Self { n: -n, d: -d }.reduce()
+        } else {
+            Self { n: n, d: d }.reduce()
+        }
+    }
+
+    pub fn reduce(&self) -> Self {
+        let gcd = gcd(self.n.abs(), self.d.abs());
+        Self {
+            n: self.n / gcd,
+            d: self.d / gcd
+        }
+    }
+
+    pub fn is_int(&self) -> bool {
+        self.d == 1
+    }
+}
+
+impl FromStr for Fraction {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut splitted = s.split('/');
+        let n = splitted.next().unwrap().parse::<i64>()?;
+        let d = splitted.next().unwrap().parse::<i64>()?;
+
+        Ok(Fraction::new(n, d))
+    }
+}
 
 #[macro_export]
 macro_rules! environment(
@@ -52,3 +103,4 @@ macro_rules! environment(
         }
     };
 );
+
