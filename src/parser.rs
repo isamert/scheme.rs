@@ -2,6 +2,7 @@ use std::iter::Peekable;
 use std::vec::IntoIter;
 use std::ops::Deref;
 use std::ops::Not;
+use std::cmp::Ordering;
 
 use lexer::Token;
 use procedure::ProcedureData;
@@ -48,6 +49,16 @@ impl PartialEq for SExpr {
             (Lazy(_x), Lazy(_y)) => panic!("This needs more thinking."),
             (Unspecified, Unspecified) => true,
             (_a, _b) => false
+        }
+    }
+}
+
+impl PartialOrd for SExpr {
+    fn partial_cmp(&self, other: &SExpr) -> Option<Ordering> {
+        use self::SExpr::*;
+        match (self, other) {
+            (Atom(t1), Atom(t2)) => t1.partial_cmp(t2),
+            (_a, _b) => None
         }
     }
 }

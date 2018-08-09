@@ -1,45 +1,45 @@
-use lexer::Token;
+use std::cmp::PartialOrd as po;
+use std::cmp::PartialEq as pe;
 use parser::SExpr;
 use evaluator::Args;
 
-enum Op {
-    EQ, LT, GT, LTE, GTE
-}
-
 pub fn lt(args: Args) -> SExpr {
-    compare(Op::LT, args)
+    compare(args, po::lt)
 }
 
 pub fn gt(args: Args) -> SExpr {
-    compare(Op::GT, args)
+    compare(args, po::gt)
 }
 
 pub fn lte(args: Args) -> SExpr {
-    compare(Op::LTE, args)
+    compare(args, po::le)
 }
 
 pub fn gte(args: Args) -> SExpr {
-    compare(Op::GTE, args)
+    compare(args, po::ge)
 }
 
 pub fn eq(args: Args) -> SExpr {
-    compare(Op::EQ, args)
+    compare(args, pe::eq)
 }
 
-// TODO: wrap in a helper module?
-fn compare(op: Op, args: Args) -> SExpr {
-    let evaled_args = args.eval();
-    let result = if let (SExpr::Atom(arg1), SExpr::Atom(arg2)) = (&evaled_args[0], &evaled_args[1]) {
-        match op {
-            Op::LT  => arg1 < arg2,
-            Op::GT  => arg1 > arg2,
-            Op::LTE => arg1 <= arg2,
-            Op::GTE => arg1 >= arg2,
-            Op::EQ  => arg1 == arg2,
-        }
-    } else {
-        panic!("Expected an atom, found something else.");
-    };
+fn compare<F>(args: Args, op: F) -> SExpr
+where F: Fn(&SExpr,&SExpr) -> bool {
+    SExpr::boolean(check(args.eval().as_slice(), op))
+}
 
-    SExpr::Atom(Token::Boolean(result))
+fn check<I,F>(xs: &[I], op: F) -> bool
+where I: PartialOrd,
+      F: Fn(&I,&I) -> bool {
+    match xs {
+        [] | [_] => true,
+        [x1, x2] => op(x1,x2),
+        _ => {
+            let x1 = xs.get(0).unwrap();
+            let x2 = xs.get(1).unwrap();
+            let rest = xs.get(2..).unwrap();
+
+            op(x1,x2) && check(rest, op)
+        }
+    }
 }
