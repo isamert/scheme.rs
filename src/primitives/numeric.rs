@@ -67,3 +67,21 @@ pub fn calc(op_str: char, args: Args) -> SExpr {
         (a,b) => panic!("At least one of these is not a number: {}, {}", a, b)
     })
 }
+
+pub fn exact(args: Args) -> SExpr {
+    let result = args.eval()
+        .iter()
+        .all(|x| match x {
+            SExpr::Atom(Token::Integer(_)) | 
+                SExpr::Atom(Token::Fraction(_)) => true,
+            SExpr::Atom(Token::Float(_)) => false,
+            _ => panic!("Wrong type of argument while using exact?")
+        });
+
+    SExpr::boolean(result)
+}
+
+
+pub fn inexact(args: Args) -> SExpr {
+    !exact(args)
+}

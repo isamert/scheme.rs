@@ -28,6 +28,8 @@ pub fn env() -> EnvValues {
         "-"  => ProcedureData::new_primitive(|args| numeric::calc('-', args)),
         "*"  => ProcedureData::new_primitive(|args| numeric::calc('*', args)),
         "/"  => ProcedureData::new_primitive(|args| numeric::calc('/', args)),
+        "exact?"    => ProcedureData::new_primitive(numeric::exact),
+        "inexact?"  => ProcedureData::new_primitive(numeric::inexact),
 
         "<"  => ProcedureData::new_primitive(ordering::lt),
         ">"  => ProcedureData::new_primitive(ordering::gt),
