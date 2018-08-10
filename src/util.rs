@@ -2,6 +2,7 @@ use std::vec::IntoIter;
 use std::iter::Peekable;
 use std::str::FromStr;
 use std::num::ParseIntError; 
+use std::ops::{Add, Sub, Mul, Div}; 
 
 pub trait GentleIterator<I: Iterator> {
     fn take_until<F>(&mut self, predicate: F) -> IntoIter<I::Item>
@@ -90,6 +91,50 @@ impl FromStr for Fraction {
         let d = splitted.next().unwrap().parse::<i64>()?;
 
         Ok(Fraction::new(n, d))
+    }
+}
+
+impl Add for Fraction {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        Fraction::new(self.n * rhs.d + rhs.n * self.d, self.d * rhs.d)
+    }
+}
+
+impl Sub for Fraction {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        Fraction::new(self.n * rhs.d - rhs.n * self.d, self.d * rhs.d)
+    }
+}
+
+impl Mul for Fraction {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        Fraction::new(self.n * rhs.n, self.d * rhs.d)
+    }
+}
+
+impl Div for Fraction {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        Fraction::new(self.n * rhs.d, self.d * rhs.n)
+    }
+}
+
+impl From<i64> for Fraction {
+    fn from(i: i64) -> Fraction {
+        Fraction::new(i, 1)
+    }
+}
+
+impl Into<f64> for Fraction {
+    fn into(self) -> f64 {
+        self.n as f64 / self.d as f64
     }
 }
 
