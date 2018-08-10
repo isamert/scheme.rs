@@ -1,5 +1,6 @@
 use std::iter::Peekable;
 use std::str::Chars;
+use std::string::ParseError;
 
 use util::GentleIterator;
 use util::AndOr;
@@ -153,20 +154,12 @@ fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
         .take_until(|c| *c != ' ' && *c != ')' && *c != '\n')
         .collect();
 
-    if is_int(&value) {
-        Some(Token::Integer(value.parse().unwrap()))
-    } else if is_float(&value) {
-        Some(Token::Float(value.parse().unwrap()))
-    } else if is_fraction(&value) {
-        let f = value.parse::<Fraction>().unwrap();
-        if f.is_int() {
-            Some(Token::Integer(f.n))
-        } else {
-            Some(Token::Fraction(f))
-        }
-    } else {
-        Some(Token::Symbol(value))
-    }
+    value.parse::<i64>().map(|i| Token::Integer(i))
+        .or_else(|_| value.parse::<f64>().map(|i| Token::Float(i)))
+        .or_else(|_| value.parse::<Fraction>().map(|i| Token::Fraction(i)))
+        .or_else(|_| value.parse::<Fraction>().map(|i| Token::Fraction(i)))
+        .or_else::<ParseError,_>(|_| Ok(Token::Symbol(value)))
+        .ok()
 }
 
 /// Parse a single char and return the corresponding Token
@@ -193,25 +186,4 @@ where F: Fn(char) -> bool {
 
 fn check_chr(iter: &mut Peekable<Chars>, chr: char) -> bool {
     check(iter, |x| x == chr)
-}
-
-fn is_int(x: &str) -> bool {
-    x.chars()
-        .all(char::is_numeric)
-}
-
-fn is_fraction(x: &str) -> bool {
-    // FIXME: Poor man's is_float
-    x.chars()
-        .all(|x| x.is_numeric() || x == '/')
-        &&
-        (x.len() > 1)
-}
-
-fn is_float(x: &str) -> bool {
-    // FIXME: Poor man's is_float
-    x.chars()
-        .all(|x| x.is_numeric() || x == '.')
-        &&
-        (x.len() > 1)
 }
