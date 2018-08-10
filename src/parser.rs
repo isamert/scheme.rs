@@ -26,7 +26,7 @@ impl Deref for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SExpr {
     Atom(Token),
     List(SExprs),
@@ -35,22 +35,6 @@ pub enum SExpr {
     Procedure(ProcedureData),
     Lazy(Box<SExpr>),
     Unspecified
-}
-
-impl PartialEq for SExpr {
-    fn eq(&self, other: &SExpr) -> bool {
-        use self::SExpr::*;
-
-        match (self, other) {
-            (Atom(t1), Atom(t2)) => t1 == t2,
-            (List(xs), List(ys)) => xs == ys,
-            (Pair(x), Pair(y)) => x == y,
-            (Procedure(x), Procedure(y)) => x == y, 
-            (Lazy(_x), Lazy(_y)) => panic!("This needs more thinking."),
-            (Unspecified, Unspecified) => true,
-            (_a, _b) => false
-        }
-    }
 }
 
 impl PartialOrd for SExpr {
