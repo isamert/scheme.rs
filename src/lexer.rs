@@ -102,6 +102,7 @@ fn parse_rparen(iter: &mut Peekable<Chars>) -> Option<Token> {
 }
 
 fn parse_string(iter: &mut Peekable<Chars>) -> Option<Token> {
+    // FIXME: check escape chars
     if !check_chr(iter, '"') {
         return None
     }
@@ -156,7 +157,10 @@ fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
 
     value.parse::<i64>().map(|i| Token::Integer(i))
         .or_else(|_| value.parse::<f64>().map(|i| Token::Float(i)))
-        .or_else(|_| value.parse::<Fraction>().map(|i| Token::Fraction(i)))
+        .or_else(|_| value.parse::<Fraction>().map(|f| {
+            if f.is_int() { Token::Integer(f.n)}
+            else { Token::Fraction(f) }
+        }))
         .or_else(|_| value.parse::<Fraction>().map(|i| Token::Fraction(i)))
         .or_else::<ParseError,_>(|_| Ok(Token::Symbol(value)))
         .ok()
