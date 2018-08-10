@@ -9,7 +9,7 @@ pub type VarName = String;
 pub type EnvValues = HashMap<VarName, SExpr>;
 pub type EnvRef = Rc<RefCell<Option<Env>>>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Env {
     parent: EnvRef,
     values: EnvValues,

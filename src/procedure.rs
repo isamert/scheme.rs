@@ -8,18 +8,18 @@ use evaluator::Args;
 type PrimitiveProcedure = fn(Args) -> SExpr;
 
 /// A `Procedure` may be either primitive or compound(user-defined).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ProcedureData {
     Primitive(PrimitiveData),
     Compound(CompoundData)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PrimitiveData {
     fun: PrimitiveProcedure,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CompoundData {
     params: Vec<String>,
     body: SExprs,

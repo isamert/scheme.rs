@@ -45,7 +45,7 @@ impl PartialEq for SExpr {
             (Atom(t1), Atom(t2)) => t1 == t2,
             (List(xs), List(ys)) => xs == ys,
             (Pair(x), Pair(y)) => x == y,
-            (Procedure(_x), Procedure(_y)) => false, // FIXME: its not actually comparing real pointers, only compares the copies of the original so it's false everytime
+            (Procedure(x), Procedure(y)) => x == y, 
             (Lazy(_x), Lazy(_y)) => panic!("This needs more thinking."),
             (Unspecified, Unspecified) => true,
             (_a, _b) => false
