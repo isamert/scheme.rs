@@ -171,7 +171,7 @@ pub fn parse(tokens: Vec<Token>) -> SExprs {
 
 fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
     match iter.peek() {
-        Some(&Token::RParen) => panic!("Not expected a )."),
+        Some(&Token::RParen) => panic!("Not expected a `)`."),
         Some(&Token::LParen) => {
             iter.next(); // Consume LParen
 
@@ -191,17 +191,18 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
                 Some(Token::Dot) => {
                     let tail = parse_helper(iter);
                     if iter.peek() != Some(&Token::RParen) {
-                        panic!("Expected `)`, but found this: {}", iter.peek().unwrap())
+                        panic!("Expected `)`, but found this: {:?}", iter.peek())
+                    } else {
+                        iter.next(); // Consume RParen
+                        SExpr::DottedList(head, Box::new(tail))
                     }
-                    SExpr::DottedList(head, Box::new(tail))
                 },
                 Some(Token::RParen) => {
                     SExpr::List(head)
                 },
-                _ => panic!("Not expected a {}", iter.peek().unwrap())
+                x => panic!("Not expected a {:?}", x)
             };
 
-            iter.next(); // Consume RParen
             result
         },
         Some(&Token::Quote) => {

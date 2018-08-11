@@ -31,8 +31,26 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         SExpr::Vector(vec) => {
             SExpr::Vector(vec.clone())
         },
-        SExpr::DottedList(_xs, _sexpr) => {
-            panic!("Not implemented yet!")
+        list@SExpr::DottedList(_,_) => {
+            // Did not expect this to be that hard
+            fn flatten(list: &SExpr) -> SExprs {
+                match list {
+                    SExpr::DottedList(xs, sexpr) => {
+                        let mut ys = xs.clone();
+                        match &**sexpr {
+                            SExpr::List(xs) => ys.append(&mut xs.clone()),
+                            dl@SExpr::DottedList(_,_) => ys.append(&mut flatten(&dl)),
+                            x => ys.push(x.clone())
+                        };
+                        ys
+                    },
+                    SExpr::List(xs) => {
+                        xs.clone()
+                    },
+                    x => vec![x.clone()]
+                }
+            }
+            SExpr::List(flatten(&list)).eval(env)
         },
         SExpr::List(xs) => {
             let op = xs.get(0)
