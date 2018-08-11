@@ -17,6 +17,7 @@ pub enum Token {
     Boolean(bool),
     Chr(char),
     Str(String),
+    Dot,
     Quote,
     QuasiQuote,
     UnQuote,
@@ -33,6 +34,7 @@ impl Token {
             '`'  => Token::QuasiQuote,
             ','  => Token::UnQuote,
             '@'  => Token::UnQuoteSplicing,
+            '.'  => Token::Dot,
             x    => Token::Chr(x),
         }
     }
