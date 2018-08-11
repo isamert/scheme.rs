@@ -31,23 +31,8 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         SExpr::Vector(vec) => {
             SExpr::Vector(vec.clone())
         },
-        SExpr::Pair(ref pair) => {
-            // FIXME: not a correct implementation at all
-            let head = pair.0.clone();
-            let tail = pair.1.clone();
-
-            println!("head: {} || tail {}", head, tail);
-
-            // If the tail is also a list, then flatten the pair and eval it
-            if let SExpr::List(mut xs) = tail {
-                let flatten = {
-                    xs.insert(0, head);
-                    SExpr::List(xs)
-                };
-                flatten.eval(&env)
-            } else {
-                panic!("Can not evaluate.");
-            }
+        SExpr::DottedList(_xs, _sexpr) => {
+            panic!("Not implemented yet!")
         },
         SExpr::List(xs) => {
             let op = xs.get(0)

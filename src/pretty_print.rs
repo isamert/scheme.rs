@@ -46,13 +46,10 @@ impl fmt::Display for SExpr {
             SExpr::Atom(x) => fmt.write_str(&format!("{}", x)),
             SExpr::Procedure(x) => fmt.write_str(&format!("{}", x)),
             SExpr::Unspecified => fmt.write_str("<unspecified>"),
-            SExpr::Pair(x) => fmt.write_str(&format!("({} . {})", x.0, x.1)),
+            SExpr::DottedList(xs, sexpr) => fmt.write_str(&format!("({} . {})", str_list(xs), sexpr)),
             SExpr::Lazy(x) => fmt.write_str(&format!("Lazy {}", x)),
-            SExpr::Vector(xs) => {
-                fmt.write_char('#');
-                write_list(fmt, xs)
-            },
-            SExpr::List(xs) => write_list(fmt, xs),
+            SExpr::Vector(xs) => fmt.write_str(&format!("({})", str_list(xs))),
+            SExpr::List(xs) => fmt.write_str(&format!("({})", str_list(xs))),
         };
         Ok(())
     }
@@ -87,15 +84,15 @@ impl fmt::Display for PrimitiveData {
 }
 
 #[allow(unused_must_use)]
-fn write_list(fmt: &mut fmt::Formatter, xs: &[SExpr]) -> Result<(), fmt::Error> {
-    fmt.write_str(&format!("{}", Token::LParen));
+fn str_list(xs: &[SExpr]) -> String {
 
+    let mut lstr = String::new();
     let mut sp = "";
     for x in xs {
-        fmt.write_str(sp);
-        fmt.write_str(&format!("{}", x));
+        lstr.push_str(sp);
+        lstr.push_str(&format!("{}", x));
         sp = " ";
     }
 
-    fmt.write_str(&format!("{}", Token::RParen))
+    lstr
 }

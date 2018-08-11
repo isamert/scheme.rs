@@ -30,8 +30,8 @@ impl Deref for Expr {
 pub enum SExpr {
     Atom(Token),
     List(SExprs),
+    DottedList(Vec<SExpr>, Box<SExpr>),
     Vector(Vec<SExpr>),
-    Pair(Box<(SExpr, SExpr)>),
     Procedure(ProcedureData),
     Lazy(Box<SExpr>),
     Unspecified
@@ -182,21 +182,12 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
             }
 
             let head = parse_helper(iter);
-            let dotted = iter.peek() == Some(&Token::Symbol(".".to_string()));
-
-            let result = if dotted {
-                iter.next(); // Consume '.'
-                let tail = parse_helper(iter);
-                SExpr::Pair(Box::new((head, tail)))
-            } else {
-                let mut tail: SExprs = vec![];
-                while iter.peek() != Some(&Token::RParen) {
-                    tail.push(parse_helper(iter));
-                }
-
-                tail.insert(0, head);
-                SExpr::List(tail)
-            };
+            let mut tail: SExprs = vec![];
+            while iter.peek() != Some(&Token::RParen) {
+                tail.push(parse_helper(iter));
+            }
+            tail.insert(0, head);
+            let result = SExpr::List(tail);
 
             iter.next(); // Consume RParen
             result
