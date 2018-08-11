@@ -181,13 +181,25 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
                 return SExpr::List(vec![]);
             }
 
-            let head = parse_helper(iter);
-            let mut tail: SExprs = vec![];
-            while iter.peek() != Some(&Token::RParen) {
-                tail.push(parse_helper(iter));
+            let mut head: SExprs = vec![];
+            while iter.peek() != Some(&Token::RParen) &&
+                    iter.peek() != Some(&Token::Dot) {
+                head.push(parse_helper(iter));
             }
-            tail.insert(0, head);
-            let result = SExpr::List(tail);
+
+            let result = match iter.next() {
+                Some(Token::Dot) => {
+                    let tail = parse_helper(iter);
+                    if iter.peek() != Some(&Token::RParen) {
+                        panic!("Expected `)`, but found this: {}", iter.peek().unwrap())
+                    }
+                    SExpr::DottedList(head, Box::new(tail))
+                },
+                Some(Token::RParen) => {
+                    SExpr::List(head)
+                },
+                _ => panic!("Not expected a {}", iter.peek().unwrap())
+            };
 
             iter.next(); // Consume RParen
             result
