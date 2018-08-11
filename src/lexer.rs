@@ -56,6 +56,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             .or_else(|| parse_unquote(iter))
             .or_else(|| parse_quasiquote(iter))
             .or_else(|| parse_rparen(iter))
+            .or_else(|| parse_dot(iter))
             .or_else(|| parse_string(iter))
             .or_else(|| parse_hash(iter))
             .or_else(|| parse_symbol(iter));
@@ -86,6 +87,10 @@ fn parse_quote(iter: &mut Peekable<Chars>) -> Option<Token> {
     parse_single(iter, '\'')
 }
 
+fn parse_dot(iter: &mut Peekable<Chars>) -> Option<Token> {
+    parse_single(iter, '.')
+}
+
 fn parse_unquote(iter: &mut Peekable<Chars>) -> Option<Token> {
     parse_single(iter, ',')
         .and_or(parse_single(iter, '@'))
@@ -97,10 +102,12 @@ fn parse_quasiquote(iter: &mut Peekable<Chars>) -> Option<Token> {
 
 fn parse_lparen(iter: &mut Peekable<Chars>) -> Option<Token> {
     parse_single(iter, '(')
+        .or_else(|| parse_single(iter, '['))
 }
 
 fn parse_rparen(iter: &mut Peekable<Chars>) -> Option<Token> {
     parse_single(iter, ')')
+        .or_else(|| parse_single(iter, ']'))
 }
 
 fn parse_string(iter: &mut Peekable<Chars>) -> Option<Token> {
@@ -154,7 +161,7 @@ fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
     }
 
     let value: String = iter
-        .take_until(|c| *c != ' ' && *c != ')' && *c != '\n')
+        .take_until(|c| *c != ' ' && *c != ')' && *c != ']' && *c != '\n')
         .collect();
 
     value.parse::<i64>().map(|i| Token::Integer(i))
