@@ -27,8 +27,8 @@ pub enum Token {
 impl Token {
     fn get(chr: char) -> Token {
         match chr {
-            '('  => Token::LParen,
-            ')'  => Token::RParen,
+            '(' | '['  => Token::LParen,
+            ')' | ']'  => Token::RParen,
             '\'' => Token::Quote,
             '`'  => Token::QuasiQuote,
             ','  => Token::UnQuote,
