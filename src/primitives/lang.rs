@@ -1,5 +1,6 @@
 use lexer::Token;
 use parser::SExpr;
+use parser::SExprs;
 use evaluator::Args;
 use evaluator::Extra;
 use procedure::ProcedureData;
@@ -29,13 +30,30 @@ fn env_add(t: EnvAddType, args: Args) -> SExpr {
         },
         SExpr::List(_) => {
             let (header, body) = args.into_split()
-                .expect("");
+                .expect("Expected a definition, found something else.");
 
             let (id, params) = header
                 .into_split()
                 .expect("");
 
             (id.into_symbol().unwrap(), ProcedureData::new(SExpr::List(params), body, &env))
+        },
+        SExpr::DottedList(xs,y) => {
+            let mut iter = xs.into_iter();
+            let id = iter.next()
+                .expect("Expected an identifier, found nothing.");
+            let head = iter.take_while(|_| true).collect::<SExprs>();
+            let (_, body) = args.into_split()
+                .expect("Expected a procedure body, found nothing.");
+
+            let arg_list = match head.len() {
+                // (define (x . y) ...)
+                0 => *y,
+                // (define (x y ... . z) ...)
+                _ => SExpr::DottedList(head, y)
+            };
+
+            (id.into_symbol().unwrap(), ProcedureData::new(arg_list, body, &env))
         },
         _ => panic!("Expected an identifier, not an expr.")
     };

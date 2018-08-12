@@ -1,6 +1,7 @@
 use env::Env;
 use env::EnvRef;
 use env::EnvRefT;
+use lexer::Token;
 use parser::SExpr;
 use parser::SExprs;
 use evaluator::Args;
@@ -38,21 +39,15 @@ impl ProcedureData {
     /// a `SExpr::Procedure(ProcedureData::Compound)`.
     pub fn new(params_expr: SExpr, body: SExprs, env: &EnvRef) -> SExpr {
         let params = match params_expr {
+            SExpr::Atom(Token::Symbol(x)) => {
+                Param::Single(x)
+            },
             SExpr::List(xs) => {
-                if xs.len() == 1 {
-                    let name = xs.into_iter()
-                        .next()
-                        .unwrap()
-                        .into_symbol()
-                        .expect("Expected a symbol found something else.");
-                    Param::Single(name)
-                } else {
-                    let names = xs.into_iter()
-                        .map(|x| x.into_symbol()
-                                    .expect("Expected a symbol found something else."))
-                        .collect();
-                    Param::Fixed(names)
-                }
+                let names = xs.into_iter()
+                    .map(|x| x.into_symbol()
+                                .expect("Expected a symbol found something else."))
+                    .collect();
+                Param::Fixed(names)
             },
             SExpr::DottedList(xs, y) => {
                 let names = xs.into_iter()
