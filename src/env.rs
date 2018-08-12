@@ -113,7 +113,7 @@ impl Env {
         }
     }
 
-    pub fn pack(&mut self, keys: &Vec<String>, vals: SExprs) {
+    pub fn pack(&mut self, keys: &[String], vals: SExprs) {
         for (i, arg) in vals.into_iter().enumerate() {
             self.values.insert(keys[i].clone(), arg);
         }

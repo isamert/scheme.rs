@@ -31,18 +31,11 @@ fn env_add(t: EnvAddType, args: Args) -> SExpr {
             let (header, body) = args.into_split()
                 .expect("");
 
-            let (id, param_list) = header
+            let (id, params) = header
                 .into_split()
                 .expect("");
 
-            let params = param_list
-                .into_iter()
-                .map(|x|
-                     x.into_symbol()
-                     .expect("Expected a parameter name, found this: {:#?}"))
-                .collect();
-
-            (id.into_symbol().unwrap(), ProcedureData::new(params, body, &env))
+            (id.into_symbol().unwrap(), ProcedureData::new(SExpr::List(params), body, &env))
         },
         _ => panic!("Expected an identifier, not an expr.")
     };
@@ -65,18 +58,8 @@ pub fn set(args: Args) -> SExpr {
 
 pub fn lambda(args: Args) -> SExpr {
     let env = args.env();
-    let (params_list, body) = args.into_split()
+    let (params, body) = args.into_split()
         .expect("Expected a parameter list and function body, found something else");
-
-    let params = params_list
-        .into_list()
-        .expect("Expected a parameter list, found something else.")
-        .into_iter()
-        .map(|x|
-            x.into_symbol()
-                .expect("Expected a parameter name, found this: {:#?}")) // FIXME: can't display what's found.
-        .collect::<Vec<String>>();
-
     ProcedureData::new(params, body, &env)
 }
 
