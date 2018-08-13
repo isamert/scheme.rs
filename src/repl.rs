@@ -21,9 +21,6 @@ pub fn run(env: EnvRef) {
             println!("NONEVALED: {:?}", sexpr);
             let evaluated = sexpr.eval(&env);
             println!("${} = {}", i, evaluated);
-
-            // TODO: create an `args!` macro
-
             // Add $i to environment so user can use the currently evaluated value
             env.define(format!("${}", i), evaluated);
             i += 1;
