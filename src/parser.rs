@@ -8,6 +8,7 @@ use lexer::Token;
 use procedure::ProcedureData;
 use evaluator;
 use env::EnvRef;
+use ports::PortData;
 
 pub type SExprs = Vec<SExpr>;
 
@@ -33,6 +34,7 @@ pub enum SExpr {
     DottedList(Vec<SExpr>, Box<SExpr>),
     Vector(Vec<SExpr>),
     Procedure(ProcedureData),
+    Port(PortData),
     Lazy(Box<SExpr>),
     Unspecified
 }
@@ -134,6 +136,20 @@ impl SExpr {
     pub fn into_list(self) -> Option<SExprs> {
         match self {
             SExpr::List(xs) => Some(xs),
+            _ => None
+        }
+    }
+
+    pub fn into_str(self) -> Option<String> {
+        match self {
+            SExpr::Atom(Token::Str(x)) => Some(x),
+            _ => None
+        }
+    }
+
+    pub fn into_port(self) -> Option<PortData> {
+        match self {
+            SExpr::Port(x) => Some(x),
             _ => None
         }
     }

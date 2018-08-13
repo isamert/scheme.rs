@@ -4,6 +4,7 @@ pub mod numeric;
 pub mod equivalence;
 pub mod ordering;
 pub mod conditionals;
+pub mod io;
 
 use env::EnvValues;
 use procedure::ProcedureData;
@@ -45,6 +46,9 @@ pub fn env() -> EnvValues {
 
         "list" => ProcedureData::new_primitive(lists::list),
         "car"  => ProcedureData::new_primitive(lists::car),
-        "cdr"  => ProcedureData::new_primitive(lists::cdr)
+        "cdr"  => ProcedureData::new_primitive(lists::cdr),
+
+        "open-input-file" => ProcedureData::new_primitive(io::open_input_file),
+        "read-line"       => ProcedureData::new_primitive(io::read_line)
     }
 }

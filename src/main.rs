@@ -4,6 +4,7 @@ mod util;
 mod env;
 mod lexer;
 mod parser;
+mod ports;
 mod procedure;
 mod evaluator;
 mod primitives;

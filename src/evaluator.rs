@@ -31,6 +31,9 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         SExpr::Vector(vec) => {
             SExpr::Vector(vec.clone())
         },
+        SExpr::Port(port) => {
+            SExpr::Port(port.clone())
+        },
         list@SExpr::DottedList(_,_) => {
             // Did not expect this to be that hard
             fn flatten(list: &SExpr) -> SExprs {
