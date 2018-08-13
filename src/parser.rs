@@ -125,6 +125,13 @@ impl SExpr {
         }
     }
 
+    pub fn as_port(&mut self) -> Option<&mut PortData> {
+        match self {
+            SExpr::Port(ref mut pd) => Some(pd),
+            _ => None
+        }
+    }
+
     // Transforms
     pub fn into_symbol(self) -> Option<String> {
         match self {
@@ -147,13 +154,6 @@ impl SExpr {
         }
     }
 
-    pub fn into_port(self) -> Option<PortData> {
-        match self {
-            SExpr::Port(x) => Some(x),
-            _ => None
-        }
-    }
-
     // Transform operations
     pub fn into_split(self) -> Option<(SExpr, SExprs)> {
         match self {
@@ -171,6 +171,16 @@ impl SExpr {
 
     pub fn eval(&self, env: &EnvRef) -> SExpr {
         evaluator::eval(self, env)
+    }
+
+    pub fn eval_ref<F,T>(&self, env: &EnvRef, mut f: F) -> T
+    where F: FnMut(&SExpr)->T {
+        evaluator::eval_ref(self, env, f)
+    }
+
+    pub fn eval_mut_ref<F,T>(&self, env: &EnvRef, mut f: F) -> T
+    where F: FnMut(&mut SExpr)->T {
+        evaluator::eval_mut_ref(self, env, f)
     }
 }
 

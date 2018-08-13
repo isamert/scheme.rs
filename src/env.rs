@@ -19,6 +19,8 @@ pub trait EnvRefT {
     fn clone_ref(&self) -> EnvRef;
 
     fn get(&self, &str) -> Option<SExpr>;
+    fn with_ref<F,T>(&self, name: &str, j: F) -> T where F: FnMut(Option<&SExpr>)->T;
+    fn with_mut_ref<F,T>(&self, name: &str, f: F) -> T where F: FnMut(Option<&mut SExpr>)->T;
     fn define(&self, String, SExpr);
     fn set(&self, String, SExpr);
 
@@ -41,6 +43,27 @@ impl EnvRefT for EnvRef {
             .as_ref()
             .expect("Cannot find environment")
             .get(name)
+    }
+
+    /// Use this function to get a real reference to what is inside the Environment,
+    /// not a copy of it. Useful for Ports particularly.
+    /// It's impossible to return a reference to something inside a RefCell.
+    /// (Actually it's quite possible trough std::cell::Ref but not in this
+    /// particular case) So we need this extra functions.
+    fn with_ref<F,T>(&self, name: &str, f: F) -> T
+    where F: FnMut(Option<&SExpr>)->T {
+        self.borrow()
+            .as_ref()
+            .expect("Cannot find environment")
+            .with_ref(name, f)
+    }
+
+    fn with_mut_ref<F,T>(&self, name: &str, f: F) -> T
+    where F: FnMut(Option<&mut SExpr>)->T {
+        self.borrow_mut()
+            .as_mut()
+            .expect("Cannot find environment")
+            .with_mut_ref(name, f)
     }
 
     fn define(&self, key: String, val: SExpr) {
@@ -97,6 +120,42 @@ impl Env {
                 self.parent.get(name)
             } else {
                 None
+            }
+        }
+    }
+
+    pub fn with_ref<F,T>(&self, name: &str, mut f: F) -> T
+    where F: FnMut(Option<&SExpr>)->T {
+        if self.values.contains_key(name) {
+            let sexpr = self.values.get(name).unwrap();
+            f(Some(sexpr))
+        } else {
+            if self.parent.is_some() {
+                self.parent
+                    .borrow()
+                    .as_ref()
+                    .expect("zaxd")
+                    .with_ref(name, f)
+            } else {
+                f(None)
+            }
+        }
+    }
+
+    pub fn with_mut_ref<F,T>(&mut self, name: &str, mut f: F) -> T
+    where F: FnMut(Option<&mut SExpr>)->T{
+        if self.values.contains_key(name) {
+            let sexpr = self.values.get_mut(name).unwrap();
+            f(Some(sexpr))
+        } else {
+            if self.parent.is_some() {
+                self.parent
+                    .borrow_mut()
+                    .as_mut()
+                    .expect("zaxd")
+                    .with_mut_ref(name, f)
+            } else {
+                f(None)
             }
         }
     }

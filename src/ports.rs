@@ -2,11 +2,12 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::BufReader;
+use std::io::BufWriter;
 
 #[derive(Debug)]
 pub enum PortData {
-    FileInput(File),
-    FileOutput(File)
+    TextualFileInput(String, BufReader<File>),
+    TextualFileOutput(String, BufWriter<File>)
 }
 
 impl PartialEq for PortData {
@@ -18,21 +19,24 @@ impl PartialEq for PortData {
 
 impl Clone for PortData {
     fn clone(&self) -> Self {
+        /*
         match self {
-            PortData::FileInput(file) => PortData::FileInput(file.try_clone().expect("Can't copy file")),
-            PortData::FileOutput(file) => PortData::FileOutput(file.try_clone().expect("Can't copy file")),
+            PortData::TextualFileInput(file) => PortData::TextualFileInput(file.try_clone().expect("Can't copy file")),
+            PortData::TextualFileOutput(file) => PortData::TextualFileOutput(file.try_clone().expect("Can't copy file")),
         }
+        */
+        panic!("this should not happen.")
     }
 }
 
 impl PortData {
-    pub fn new_file_input(path: &str) -> PortData {
+    pub fn new_textual_file_input(path: &str) -> PortData {
         let file = OpenOptions::new()
             .read(true)
             .open(path)
             .expect(&format!("Can't open file: {}", path));
 
-        PortData::FileInput(file)
+        PortData::TextualFileInput(path.to_string(), BufReader::new(file))
     }
 
 
@@ -43,15 +47,14 @@ impl PortData {
             .open(path)
             .expect(&format!("Can't open file: {}", path));
 
-        PortData::FileOutput(file)
+        PortData::TextualFileOutput(path.to_string(), BufWriter::new(file))
     }
 
-    pub fn read_line(&self) -> (usize, String) {
+    pub fn read_line(&mut self) -> (usize, String) {
         match self {
-            PortData::FileInput(f) => {
+            PortData::TextualFileInput(_, br) => {
                 let mut string = String::new();
-                let size = BufReader::new(f)
-                    .read_line(&mut string)
+                let size = br.read_line(&mut string)
                     .expect("Can't read file");
 
                 (size, string)
@@ -60,12 +63,11 @@ impl PortData {
         }
     }
 
-    pub fn read_all_str(&self) -> (usize, String) {
+    pub fn read_all_str(&mut self) -> (usize, String) {
         match self {
-            PortData::FileInput(f) => {
+            PortData::TextualFileInput(_, br) => {
                 let mut string = String::new();
-                let size = BufReader::new(f)
-                    .read_to_string(&mut string)
+                let size = br.read_to_string(&mut string)
                     .expect("Can't read file");
 
                 (size, string)

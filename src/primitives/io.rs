@@ -2,6 +2,8 @@ use parser::SExpr;
 use lexer::Token;
 use evaluator::Args;
 use ports::PortData;
+use env::EnvRef;
+use env::EnvRefT;
 
 pub fn open_input_file(args: Args) -> SExpr {
     let mut evaled_iter = args.eval().into_iter();
@@ -10,16 +12,17 @@ pub fn open_input_file(args: Args) -> SExpr {
         .into_str()
         .expect("Expected a string as argument, found something else.");
 
-    SExpr::Port(PortData::new_file_input(&path))
+    SExpr::Port(PortData::new_textual_file_input(&path))
 }
 
 pub fn read_line(args: Args) -> SExpr {
-    let mut evaled_iter = args.eval().into_iter();
-    let port = evaled_iter.next()
+    let (_size, line) = args.get(0)
         .expect("Expected a port as argument, found nothing.")
-        .into_port()
-        .expect("Expected a port as argument, found something else.");
-    let (_size, line) = port.read_line();
+        .eval_mut_ref(&args.env, |port_expr| {
+            port_expr.as_port()
+                .expect("Expected a port as argument, found something else.")
+                .read_line()
+        });
 
-    SExpr::str_(&line)
+    SExpr::str_(&line.trim_right_matches(|c| c == '\n'))
 }

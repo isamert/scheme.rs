@@ -4,16 +4,47 @@ use parser::SExprs;
 use env::EnvRef;
 use env::EnvRefT;
 
+pub fn eval_mut_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> T
+where F: FnMut(&mut SExpr)->T {
+    match sexpr {
+        SExpr::Atom(Token::Symbol(ref x)) => {
+            env.with_mut_ref(x, |var_ref| {
+                let result = var_ref.expect(&format!("Unbound variable: {}", x));
+                match result {
+                    SExpr::Lazy(_) => f(&mut result.eval(env)),
+                    _ => f(result)
+                }
+            })
+        },
+        x => f(&mut eval(x, env))
+    }
+}
+
+pub fn eval_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> T
+where F: FnMut(&SExpr)->T {
+    match sexpr {
+        SExpr::Atom(Token::Symbol(ref x)) => {
+            env.with_ref(x, |var_ref| {
+                let result = var_ref.expect(&format!("Unbound variable: {}", x));
+                match result {
+                    SExpr::Lazy(_) => f(&result.eval(env)),
+                    _ => f(result)
+                }
+            })
+        },
+        x => f(&eval(x, env))
+    }
+}
+
 pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
             let result = env.get(x)
                 .expect(&format!("Unbound variable: {}", x));
 
-            if result.is_lazy() {
-                result.eval(env)
-            } else {
-                result.clone()
+            match result {
+                SExpr::Lazy(_) => result.eval(env),
+                _ => result
             }
         },
         SExpr::Atom(x) => {
@@ -35,7 +66,6 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
             SExpr::Port(port.clone())
         },
         list@SExpr::DottedList(_,_) => {
-            // Did not expect this to be that hard
             fn flatten(list: &SExpr) -> SExprs {
                 match list {
                     SExpr::DottedList(xs, sexpr) => {
@@ -156,7 +186,6 @@ impl Args {
         &self.vec
     }
 
-    // FIXME: iter -> into_iter?
     pub fn eval(&self) -> SExprs {
         self.vec.iter()
             .map(|x| eval(&x, &self.env))
@@ -177,7 +206,7 @@ impl Args {
     }
 }
 
-
+// FIXME: does unneccesarry cloning when called, refactor with into_iter
 pub trait ToArgs {
     fn to_args(&self, env: &EnvRef) -> Args;
 }
