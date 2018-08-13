@@ -22,7 +22,8 @@ pub trait EnvRefT {
     fn with_ref<F,T>(&self, name: &str, j: F) -> T where F: FnMut(Option<&SExpr>)->T;
     fn with_mut_ref<F,T>(&self, name: &str, f: F) -> T where F: FnMut(Option<&mut SExpr>)->T;
     fn define(&self, String, SExpr);
-    fn set(&self, String, SExpr);
+    fn set(&self, String, SExpr) -> Option<SExpr>;
+    fn remove(&self, &str) -> Option<SExpr>;
 
     fn is_some(&self) -> bool;
 }
@@ -73,11 +74,18 @@ impl EnvRefT for EnvRef {
             .define(key, val);
     }
 
-    fn set(&self, key: String, val: SExpr) {
+    fn set(&self, key: String, val: SExpr) -> Option<SExpr> {
         self.borrow_mut()
             .as_mut()
             .expect("Cannot find environment")
-            .set(key, val);
+            .set(key, val)
+    }
+
+    fn remove(&self, key: &str) -> Option<SExpr> {
+        self.borrow_mut()
+            .as_mut()
+            .expect("Cannot find environment")
+            .remove(key)
     }
 }
 
@@ -164,11 +172,27 @@ impl Env {
         self.values.insert(key, val);
     }
 
-    pub fn set(&mut self, key: String, val: SExpr) {
-        if let Some(x) = self.values.get_mut(&key) {
-            *x = val;
+    pub fn set(&mut self, key: String, val: SExpr) -> Option<SExpr> {
+        if self.values.contains_key(&key) {
+            self.values.insert(key, val)
         } else {
-            panic!("Unbound variable: {}", key);
+            if self.parent.is_some() {
+                self.parent.set(key, val)
+            } else {
+                None
+            }
+        }
+    }
+
+    pub fn remove(&mut self, key: &str) -> Option<SExpr> {
+        if self.values.contains_key(key) {
+            self.values.remove(key)
+        } else {
+            if self.parent.is_some() {
+                self.parent.remove(key)
+            } else {
+                None
+            }
         }
     }
 

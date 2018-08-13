@@ -19,12 +19,6 @@ impl PartialEq for PortData {
 
 impl Clone for PortData {
     fn clone(&self) -> Self {
-        /*
-        match self {
-            PortData::TextualFileInput(file) => PortData::TextualFileInput(file.try_clone().expect("Can't copy file")),
-            PortData::TextualFileOutput(file) => PortData::TextualFileOutput(file.try_clone().expect("Can't copy file")),
-        }
-        */
         panic!("this should not happen.")
     }
 }
@@ -40,7 +34,7 @@ impl PortData {
     }
 
 
-    pub fn new_file_output(path: &str) -> PortData {
+    pub fn new_textual_file_output(path: &str) -> PortData {
         let file = OpenOptions::new()
             .create_new(true)
             .write(true)
@@ -73,6 +67,13 @@ impl PortData {
                 (size, string)
             },
             _ => panic!("Can't read from this type of port.")
+        }
+    }
+
+    pub fn is_input(&self) -> bool {
+        match self {
+            PortData::TextualFileInput(_, _) => true,
+            _ => false
         }
     }
 }

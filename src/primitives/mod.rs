@@ -48,7 +48,12 @@ pub fn env() -> EnvValues {
         "car"  => ProcedureData::new_primitive(lists::car),
         "cdr"  => ProcedureData::new_primitive(lists::cdr),
 
-        "open-input-file" => ProcedureData::new_primitive(io::open_input_file),
-        "read-line"       => ProcedureData::new_primitive(io::read_line)
+
+        "output-port?"     => ProcedureData::new_primitive(io::input_port__),
+        "input-port?"      => ProcedureData::new_primitive(io::output_port__),
+        "open-input-file"  => ProcedureData::new_primitive(io::open_input_file),
+        "open-output-file" => ProcedureData::new_primitive(io::open_output_file),
+        "read-line"        => ProcedureData::new_primitive(io::read_line),
+        "close-port"       => ProcedureData::new_primitive(io::close_port)
     }
 }

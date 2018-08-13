@@ -125,9 +125,24 @@ impl SExpr {
         }
     }
 
-    pub fn as_port(&mut self) -> Option<&mut PortData> {
+    // Borrows
+    pub fn as_port(&self) -> Option<&PortData> {
+        match self {
+            SExpr::Port(ref pd) => Some(pd),
+            _ => None
+        }
+    }
+
+    pub fn as_port_mut(&mut self) -> Option<&mut PortData> {
         match self {
             SExpr::Port(ref mut pd) => Some(pd),
+            _ => None
+        }
+    }
+
+    pub fn as_symbol(&self) -> Option<String> {
+        match self {
+            SExpr::Atom(Token::Symbol(x)) => Some(x.to_string()),
             _ => None
         }
     }
