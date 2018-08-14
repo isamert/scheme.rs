@@ -2,7 +2,6 @@ use parser::SExpr;
 use parser::SExprs;
 use evaluator::Args;
 use evaluator::ToArgs;
-use env::EnvRefT;
 
 
 pub fn if_(args: Args) -> SExpr {
