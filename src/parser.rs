@@ -122,6 +122,20 @@ impl SExpr {
         }
     }
 
+    pub fn is_str(&self) -> bool {
+        match self {
+            SExpr::Atom(Token::Str(_)) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_chr(&self) -> bool {
+        match self {
+            SExpr::Atom(Token::Chr(_)) => true,
+            _ => false
+        }
+    }
+
     pub fn is_lazy(&self) -> bool {
         match self {
             SExpr::Lazy(_) => true,
@@ -169,6 +183,13 @@ impl SExpr {
     pub fn into_str(self) -> Option<String> {
         match self {
             SExpr::Atom(Token::Str(x)) => Some(x),
+            _ => None
+        }
+    }
+
+    pub fn into_chr(self) -> Option<char> {
+        match self {
+            SExpr::Atom(Token::Chr(x)) => Some(x),
             _ => None
         }
     }

@@ -60,6 +60,29 @@ macro_rules! call_read_fn(
     };
 );
 
+#[macro_export]
+macro_rules! call_write_fn(
+    ($args: ident, $fn: ident, $thing: expr) => {
+        {
+            if $args.len() <= 1 {
+                PortData::current_output()
+                    .$fn(&$thing);
+            } else if $args.len() > 1 {
+                $args.get(1)
+                    .expect("Expected a port as argument, found nothing.")
+                    .eval_mut_ref(&$args.env, |port_expr| {
+                        let port = port_expr.as_port_mut()
+                            .expect("Expected a port as argument, found something else.");
+                        port.$fn(&$thing);
+                        SExpr::Unspecified
+                    });
+            }
+
+            SExpr::Unspecified
+        }
+    };
+);
+
 //
 // Functions
 //
@@ -124,6 +147,46 @@ pub fn read_all(args: Args) -> SExpr {
                 panic!("The port is either closed or an input port, can't read.")
             }
         })
+}
+
+pub fn write(args: Args) -> SExpr {
+    let string = args.get(0)
+        .expect("Expected an argument, found nothing.")
+        .eval(&args.env)
+        .to_string();
+    call_write_fn!(args, write_string, string)
+}
+
+pub fn write_string(args: Args) -> SExpr {
+    // TODO: (write-string string port START)
+    // TODO: (write-string string port START END)
+    let string = args.get(0)
+        .expect("Expected an argument, found nothing.")
+        .eval(&args.env)
+        .into_str()
+        .expect("Expected a string as argument, found something else.");
+
+    call_write_fn!(args, write_string, string)
+}
+
+pub fn newline(args: Args) -> SExpr {
+    call_write_fn!(args, write_string, "\n")
+}
+
+pub fn display(args: Args) -> SExpr {
+    let obj = args.get(0)
+        .expect("Expected an argument, found nothing.")
+        .eval(&args.env);
+
+    let string = if obj.is_str() {
+        obj.into_str().unwrap()
+    } else if obj.is_chr() {
+        obj.into_chr().unwrap().to_string()
+    } else {
+        obj.to_string()
+    };
+
+    call_write_fn!(args, write_string, string)
 }
 
 pub fn close_port(args: Args) -> SExpr {

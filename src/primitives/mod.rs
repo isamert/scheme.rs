@@ -59,6 +59,10 @@ pub fn env() -> EnvValues {
         "read-line"        => io::read_line,
         "read-char"        => io::read_char,
         "read-all"         => io::read_all,
+        "write"            => io::write,
+        "write-string"     => io::write_string,
+        "display"          => io::display,
+        "newline"          => io::newline,
         "close-port"       => io::close_port
     }
 }

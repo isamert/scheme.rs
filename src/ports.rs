@@ -4,6 +4,8 @@ use std::fs::OpenOptions;
 use std::io;
 use std::io::{BufReader, BufWriter, Stdin, Stdout};
 
+use parser::SExpr;
+
 #[derive(Debug)]
 pub enum PortData {
     TextualFileInput(String, BufReader<File>),
@@ -98,6 +100,11 @@ impl PortData {
         PortData::StdInput(io::stdin())
     }
 
+    pub fn current_output() -> PortData {
+        // TODO: current_output should be changable
+        PortData::StdOutput(io::stdout())
+    }
+
     //
     // Read functions
     //
@@ -153,6 +160,23 @@ impl PortData {
     }
 
     //
+    // Write functions
+    //
+    pub fn write_string(&mut self, string: &str) -> () {
+        match self {
+            PortData::TextualFileOutput(_,br) => {
+                write!(br, "{}", string);
+                br.flush();
+            },
+            PortData::StdOutput(br) => {
+                write!(br, "{}", string);
+                br.flush();
+            },
+            _ => panic!("Can't write to this type of port: {}")
+        }
+    }
+
+    //
     // Checks
     //
     pub fn is_input(&self) -> bool {
@@ -177,6 +201,8 @@ impl PortData {
         match self {
             PortData::TextualFileInput(_, _) => true,
             PortData::TextualFileOutput(_, _) => true,
+            PortData::StdOutput(_) => true,
+            PortData::StdInput(_) => true,
             _ => false
         }
     }
