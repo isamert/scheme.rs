@@ -99,16 +99,13 @@ impl Env {
 
     pub fn new(parent: EnvRef) -> Env {
         Env {
-            parent: parent,
+            parent,
             values: HashMap::new(),
         }
     }
 
     pub fn with_values(parent: EnvRef, values: EnvValues) -> Env {
-        Env {
-            parent: parent,
-            values: values
-        }
+        Env { parent, values }
     }
 
     /// Converts `Env` into a `EnvRef`.
@@ -116,37 +113,33 @@ impl Env {
     /// If you need another pointer to newly created EnvRef,
     /// use `EnvRef::clone_ref()` which only copies the pointer,
     /// not the environment itself.
-    pub fn to_ref(self) -> EnvRef {
+    pub fn into_ref(self) -> EnvRef {
         Rc::new(RefCell::new(Some(self)))
     }
 
     pub fn get(&self, name: &str) -> Option<SExpr> {
         if self.values.contains_key(name) {
-            Some(self.values.get(name).unwrap().clone())
+            Some(self.values[name].clone())
+        } else if self.parent.is_some() {
+            self.parent.get(name)
         } else {
-            if self.parent.is_some() {
-                self.parent.get(name)
-            } else {
-                None
-            }
+            None
         }
     }
 
     pub fn with_ref<F,T>(&self, name: &str, mut f: F) -> T
     where F: FnMut(Option<&SExpr>)->T {
         if self.values.contains_key(name) {
-            let sexpr = self.values.get(name).unwrap();
+            let sexpr = &self.values[name];
             f(Some(sexpr))
+        } else if self.parent.is_some() {
+            self.parent
+                .borrow()
+                .as_ref()
+                .expect("zaxd")
+                .with_ref(name, f)
         } else {
-            if self.parent.is_some() {
-                self.parent
-                    .borrow()
-                    .as_ref()
-                    .expect("zaxd")
-                    .with_ref(name, f)
-            } else {
-                f(None)
-            }
+            f(None)
         }
     }
 
@@ -155,16 +148,14 @@ impl Env {
         if self.values.contains_key(name) {
             let sexpr = self.values.get_mut(name).unwrap();
             f(Some(sexpr))
+        } else if self.parent.is_some() {
+            self.parent
+                .borrow_mut()
+                .as_mut()
+                .expect("zaxd")
+                .with_mut_ref(name, f)
         } else {
-            if self.parent.is_some() {
-                self.parent
-                    .borrow_mut()
-                    .as_mut()
-                    .expect("zaxd")
-                    .with_mut_ref(name, f)
-            } else {
-                f(None)
-            }
+            f(None)
         }
     }
 
@@ -175,24 +166,20 @@ impl Env {
     pub fn set(&mut self, key: String, val: SExpr) -> Option<SExpr> {
         if self.values.contains_key(&key) {
             self.values.insert(key, val)
+        } else if self.parent.is_some() {
+            self.parent.set(key, val)
         } else {
-            if self.parent.is_some() {
-                self.parent.set(key, val)
-            } else {
-                None
-            }
+            None
         }
     }
 
     pub fn remove(&mut self, key: &str) -> Option<SExpr> {
         if self.values.contains_key(key) {
             self.values.remove(key)
+        } else if self.parent.is_some() {
+            self.parent.remove(key)
         } else {
-            if self.parent.is_some() {
-                self.parent.remove(key)
-            } else {
-                None
-            }
+            None
         }
     }
 

@@ -35,9 +35,9 @@ where I: PartialOrd,
         [] | [_] => true,
         [x1, x2] => op(x1,x2),
         _ => {
-            let x1 = xs.get(0).unwrap();
-            let x2 = xs.get(1).unwrap();
-            let rest = xs.get(2..).unwrap();
+            let x1 = &xs[0];
+            let x2 = &xs[1];
+            let rest = &xs[2..];
 
             op(x1,x2) && check(rest, op)
         }

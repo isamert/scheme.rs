@@ -143,19 +143,11 @@ pub struct Args {
 
 impl Args {
     pub fn new_with_extra(vec: SExprs, extra: Extra, env: &EnvRef) -> Args {
-        Args {
-            env: env.clone(),
-            extra: extra,
-            vec: vec
-        }
+        Args { env: env.clone(), extra, vec }
     }
 
     pub fn new(vec: SExprs, env: &EnvRef) -> Args {
-        Args {
-            env: env.clone(),
-            extra: Extra::Nothing,
-            vec: vec
-        }
+        Args { env: env.clone(), extra: Extra::Nothing, vec }
     }
 
     pub fn env(&self) -> EnvRef {
@@ -195,7 +187,7 @@ impl Args {
     pub fn map<F>(mut self, mut f: F) -> Args
     where F: FnMut(SExpr) -> SExpr {
         self.vec = self.vec.into_iter()
-            .map(|x| f(x))
+            .map(f)
             .collect::<SExprs>();
 
         self

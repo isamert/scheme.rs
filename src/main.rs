@@ -15,6 +15,6 @@ use env::Env;
 
 fn main() {
     let env = Env::with_values(Env::null(), primitives::env());
-    repl::run(env.to_ref());
+    repl::run(env.into_ref());
 }
 

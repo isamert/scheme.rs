@@ -8,7 +8,7 @@ pub fn eq(args: Args) -> SExpr {
 pub fn eqv(args: Args) -> SExpr {
     equality(args, |args| {
         let evaled = args.eval();
-        match (evaled.get(0).unwrap(), evaled.get(1).unwrap()) {
+        match (&evaled[0], &evaled[1]) {
             (SExpr::Atom(x), SExpr::Atom(y)) => x == y,
             (SExpr::List(x), SExpr::List(y)) => x.is_empty() && y.is_empty(),
             (SExpr::Vector(x), SExpr::Vector(y)) => x.is_empty() && y.is_empty(),
@@ -20,8 +20,8 @@ pub fn eqv(args: Args) -> SExpr {
 pub fn equal(args: Args) -> SExpr {
     equality(args, |args| {
         let evaled = args.eval();
-        let obj1 = evaled.get(0).unwrap();
-        let obj2 = evaled.get(1).unwrap();
+        let obj1 = &evaled[0];
+        let obj2 = &evaled[1];
 
         obj1 == obj2
     })

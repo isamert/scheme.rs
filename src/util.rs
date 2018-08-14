@@ -65,7 +65,7 @@ impl Fraction {
         if d < 0 {
             Self { n: -n, d: -d }.reduce()
         } else {
-            Self { n: n, d: d }.reduce()
+            Self { n, d }.reduce()
         }
     }
 
@@ -143,8 +143,9 @@ macro_rules! environment(
     { $($key:expr => $value:expr),+ } => {
         {
             use env::EnvValues;
+            use procedure::ProcedureData;
             let mut m = EnvValues::new();
-            $(m.insert($key.to_string(), $value);)+m
+            $(m.insert($key.to_string(), ProcedureData::new_primitive($value));)+m
         }
     };
 );

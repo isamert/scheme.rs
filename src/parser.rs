@@ -109,7 +109,7 @@ impl SExpr {
     pub fn to_bool(&self) -> bool {
         // Anything other than #f is treated as true.
         match self {
-            SExpr::Atom(Token::Boolean(x)) => x.clone(),
+            SExpr::Atom(Token::Boolean(x)) => *x,
             _ => true
         }
     }
@@ -192,12 +192,12 @@ impl SExpr {
         evaluator::eval(self, env)
     }
 
-    pub fn eval_ref<F,T>(&self, env: &EnvRef, mut f: F) -> T
+    pub fn eval_ref<F,T>(&self, env: &EnvRef, f: F) -> T
     where F: FnMut(&SExpr)->T {
         evaluator::eval_ref(self, env, f)
     }
 
-    pub fn eval_mut_ref<F,T>(&self, env: &EnvRef, mut f: F) -> T
+    pub fn eval_mut_ref<F,T>(&self, env: &EnvRef, f: F) -> T
     where F: FnMut(&mut SExpr)->T {
         evaluator::eval_mut_ref(self, env, f)
     }
@@ -232,7 +232,7 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
                 head.push(parse_helper(iter));
             }
 
-            let result = match iter.next() {
+            match iter.next() {
                 Some(Token::Dot) => {
                     let tail = parse_helper(iter);
                     if iter.peek() != Some(&Token::RParen) {
@@ -246,9 +246,7 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
                     SExpr::List(head)
                 },
                 x => panic!("Not expected a {:?}", x)
-            };
-
-            result
+            }
         },
         Some(&Token::Quote) => {
             iter.next();

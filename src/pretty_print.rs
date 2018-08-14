@@ -10,10 +10,7 @@ use procedure::PrimitiveData;
 impl fmt::Display for Token {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let format_bool = |&x| {
-            match x {
-                true  => "#t",
-                false => "#f",
-            }
+            if x { "#t" } else { "#f" }
         };
         let s = match self {
             Token::LParen          => "(".to_string(),
@@ -26,10 +23,10 @@ impl fmt::Display for Token {
             Token::Symbol(x)  => x.to_string(),
             Token::Integer(x) => format!("{}", x),
             Token::Float(x)   => format!("{}", x),
-            Token::Fraction(x)   => format!("{}/{}", x.n, x.d),
+            Token::Fraction(x) => format!("{}/{}", x.n, x.d),
             Token::Boolean(x) => format_bool(x).to_string(),
             Token::Chr(x)     => format!("#\\{}", x),
-            Token::Str(x)     => x.to_string(),
+            Token::Str(x)     => format!("\"{}\"", x),
         };
 
         fmt.write_str(&s);

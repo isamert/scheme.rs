@@ -104,7 +104,7 @@ pub fn read_char(args: Args) -> SExpr {
 }
 
 pub fn read_u8(args: Args) -> SExpr {
-    SExpr::integer(call_read_fn!(args, read_u8) as i64)
+    SExpr::integer(i64::from(call_read_fn!(args, read_u8)))
 }
 
 pub fn read_all(args: Args) -> SExpr {
@@ -119,7 +119,7 @@ pub fn read_all(args: Args) -> SExpr {
                 SExpr::str_owned(string)
             } else if port.is_binary() && port.is_input() {
                 let (_size, u8s) = port.read_all_u8();
-                SExpr::List(u8s.into_iter().map(|u| SExpr::integer(u as i64)).collect())
+                SExpr::List(u8s.into_iter().map(|u| SExpr::integer(i64::from(u))).collect())
             } else {
                 panic!("The port is either closed or an input port, can't read.")
             }

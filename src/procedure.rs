@@ -37,7 +37,7 @@ pub enum Param {
 impl ProcedureData {
     /// Creates user defined procedure,
     /// a `SExpr::Procedure(ProcedureData::Compound)`.
-    pub fn new(params_expr: SExpr, body: SExprs, env: &EnvRef) -> SExpr {
+    pub fn new_compound(params_expr: SExpr, body: SExprs, env: &EnvRef) -> SExpr {
         let params = match params_expr {
             SExpr::Atom(Token::Symbol(x)) => {
                 Param::Single(x)
@@ -64,8 +64,8 @@ impl ProcedureData {
         };
 
         SExpr::Procedure(ProcedureData::Compound(CompoundData {
-            params: params,
-            body: body,
+            params,
+            body,
             env: env.clone_ref()
         }))
     }
@@ -73,9 +73,7 @@ impl ProcedureData {
     /// Creates a primitive function,
     /// a `SExpr::Procedure(ProcedureData::Primitive)`
     pub fn new_primitive(fun: PrimitiveProcedure) -> SExpr {
-        SExpr::Procedure(ProcedureData::Primitive(PrimitiveData {
-            fun: fun
-        }))
+        SExpr::Procedure(ProcedureData::Primitive(PrimitiveData { fun }))
     }
 
     pub fn apply(&self, args: Args) -> SExpr {
@@ -105,8 +103,8 @@ impl CompoundData {
                 }
 
                 let mut evaled_args = args.eval().into_iter();
-                for i in 0..xs.len() {
-                    inner_env.define(xs[i].clone(), evaled_args.next().unwrap());
+                for name in xs {
+                    inner_env.define(name.clone(), evaled_args.next().unwrap());
                 }
 
                 let rest = evaled_args.take_while(|_| true).collect::<SExprs>();
@@ -116,7 +114,7 @@ impl CompoundData {
 
 
         let mut last_expr = None;
-        let env_ref = inner_env.to_ref();
+        let env_ref = inner_env.into_ref();
         for (_i, expr) in self.body.iter().enumerate() {
             last_expr = Some(expr.eval(&env_ref));
         }

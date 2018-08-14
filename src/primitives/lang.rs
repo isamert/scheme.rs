@@ -20,7 +20,7 @@ pub fn lambda(args: Args) -> SExpr {
     let env = args.env();
     let (params, body) = args.into_split()
         .expect("Expected a parameter list and function body, found something else");
-    ProcedureData::new(params, body, &env)
+    ProcedureData::new_compound(params, body, &env)
 }
 
 pub fn let_(args: Args) -> SExpr {
@@ -128,6 +128,7 @@ pub fn eval_unquoted(args: Args) -> SExpr {
 //
 // Helpers
 //
+#[derive(Clone, Copy)]
 enum EnvAddType {
     Define,
     Set
@@ -156,7 +157,7 @@ fn env_add(t: EnvAddType, args: Args) -> SExpr {
                 .into_split()
                 .expect("");
 
-            (id.into_symbol().unwrap(), ProcedureData::new(SExpr::List(params), body, &env))
+            (id.into_symbol().unwrap(), ProcedureData::new_compound(SExpr::List(params), body, &env))
         },
         SExpr::DottedList(xs,y) => {
             let mut iter = xs.into_iter();
@@ -173,7 +174,7 @@ fn env_add(t: EnvAddType, args: Args) -> SExpr {
                 _ => SExpr::DottedList(head, y)
             };
 
-            (id.into_symbol().unwrap(), ProcedureData::new(arg_list, body, &env))
+            (id.into_symbol().unwrap(), ProcedureData::new_compound(arg_list, body, &env))
         },
         _ => panic!("Expected an identifier, not an expr.")
     };
@@ -198,7 +199,7 @@ where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SExpr) {
         .expect("Expected a list of bindings and body, found something else.");
 
     let env = Env::new(parent_env.clone())
-        .to_ref();
+        .into_ref();
     let bindings_list = bindings.into_list()
         .expect("Expected a list of bindings, found something else.");
 
@@ -223,6 +224,6 @@ where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SExpr) {
         result = Some(expr.eval(&env));
     }
 
-    return result
-        .expect("Let body is empty");
+    result
+        .expect("Let body is empty")
 }
