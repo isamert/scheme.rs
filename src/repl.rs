@@ -1,20 +1,18 @@
 use std::io;
-use std::io::prelude::*;
 
 use lexer;
 use parser;
-use parser::SExpr;
-use evaluator::ToArgs;
 use env::EnvRef;
 use env::EnvRefT;
-use primitives::lang;
 
 pub fn run(env: EnvRef) {
     let stdin = io::stdin();
 
     let mut i = 0;
-    for line in stdin.lock().lines() {
-        let tokens = lexer::tokenize(&line.unwrap());
+    let mut line = String::new();
+    loop {
+        let _size = stdin.read_line(&mut line);
+        let tokens = lexer::tokenize(&line);
         println!("TOKENS: {:?}", tokens);
         let sexprs = parser::parse(tokens);
         for sexpr in sexprs.iter() {

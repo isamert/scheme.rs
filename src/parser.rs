@@ -85,6 +85,10 @@ impl SExpr {
         SExpr::Atom(Token::Str(x.to_string()))
     }
 
+    pub fn str_owned(x: String) -> SExpr {
+        SExpr::Atom(Token::Str(x))
+    }
+
     pub fn quasiquote(mut args: SExprs) -> SExpr {
         args.insert(0, SExpr::symbol("quasiquote"));
         SExpr::List(args)

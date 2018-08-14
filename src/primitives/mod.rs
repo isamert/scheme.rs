@@ -51,9 +51,16 @@ pub fn env() -> EnvValues {
 
         "output-port?"     => ProcedureData::new_primitive(io::input_port__),
         "input-port?"      => ProcedureData::new_primitive(io::output_port__),
+        "textual-port?"    => ProcedureData::new_primitive(io::textual_port__),
+        "binary-port?"     => ProcedureData::new_primitive(io::binary_port__),
         "open-input-file"  => ProcedureData::new_primitive(io::open_input_file),
         "open-output-file" => ProcedureData::new_primitive(io::open_output_file),
+        "open-binary-input-file"  => ProcedureData::new_primitive(io::open_binary_input_file),
+        "open-binary-output-file" => ProcedureData::new_primitive(io::open_binary_output_file),
+        "read-u8"          => ProcedureData::new_primitive(io::read_u8),
         "read-line"        => ProcedureData::new_primitive(io::read_line),
+        "read-char"        => ProcedureData::new_primitive(io::read_char),
+        "read-all"        => ProcedureData::new_primitive(io::read_all),
         "close-port"       => ProcedureData::new_primitive(io::close_port)
     }
 }
