@@ -33,10 +33,7 @@ where F: (FnMut(&Args) -> bool) {
         return SExpr::boolean(true);
     }
 
-    let obj1 = args.get(0).unwrap();
-    let obj2 = args.get(1).unwrap();
-
-    let result = match (obj1, obj2) {
+    let result = match (&args[0], &args[1]) {
         (SExpr::Atom(x), SExpr::Atom(y)) => x == y,
         _ => {
             non_atom(&args)

@@ -63,7 +63,8 @@ pub fn cond(args: Args) -> SExpr {
 }
 
 pub fn case(args: Args) -> SExpr {
-    let test = args.get(0).unwrap();
+    let test = args.get(0)
+        .expect("Expected an argument, found nothing.");
     let args_vec: SExprs = args.all()
         .iter()
         .skip(1)

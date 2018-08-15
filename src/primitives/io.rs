@@ -201,7 +201,7 @@ pub fn close_port(args: Args) -> SExpr {
     // We can't directly remove it inside closure above, because env is
     // already borrowed, we can't borrow it twice.
     if remove {
-        let id = args.get(0).unwrap().as_symbol();
+        let id = args[0].as_symbol();
         if id.is_some() {
             let id_ = id.unwrap();
             let _port = args.env.set(id_.clone(), SExpr::Port(PortData::Closed))

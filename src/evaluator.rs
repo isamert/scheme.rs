@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use lexer::Token;
 use parser::SExpr;
 use parser::SExprs;
@@ -139,6 +141,14 @@ pub struct Args {
     pub env: EnvRef,
     pub extra: Extra,
     vec: SExprs
+}
+
+impl Index<usize> for Args {
+    type Output = SExpr;
+
+    fn index(&self, i: usize) -> &SExpr {
+        self.get(i).unwrap()
+    }
 }
 
 impl Args {
