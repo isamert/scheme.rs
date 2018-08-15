@@ -143,6 +143,13 @@ impl SExpr {
         }
     }
 
+    pub fn is_unspecified(&self) -> bool {
+        match self {
+            SExpr::Unspecified => true,
+            _ => false
+        }
+    }
+
     // Borrows
     pub fn as_port(&self) -> Option<&PortData> {
         match self {
