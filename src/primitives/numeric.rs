@@ -6,13 +6,13 @@ use evaluator::Args;
 use util;
 
 pub fn calc(op_str: char, args: Args) -> SExpr {
-    // FIXME: (- 5) should evaluate to -5
-    // FIXME: (/ 5 2) should evaluate to 5/2
-    // FIXME: (/ 5) should evaluate to 1/5 (not sure about that)
     let mut args_iter = args.eval()
         .into_iter();
-    let init = args_iter.next()
-        .expect("Expected an argument, found none");
+    let init = match op_str {
+        '+' | '-' if args.len() == 1 => SExpr::integer(0),
+        '*' | '/' if args.len() == 1 => SExpr::integer(1),
+        _ => args_iter.next().expect("Expected an argument, found none")
+    };
 
 
     type I = fn(i64,i64)->i64;
