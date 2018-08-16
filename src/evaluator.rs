@@ -193,6 +193,10 @@ impl Args {
             .map(|x| eval(&x, &self.env))
             .collect::<SExprs>()
     }
+    
+    pub fn evaled(self) -> Args {
+        Args::new_with_extra(self.eval(), self.extra, &self.env)
+    }
 
     pub fn map<F>(mut self, mut f: F) -> Args
     where F: FnMut(SExpr) -> SExpr {
@@ -206,6 +210,27 @@ impl Args {
     pub fn len(&self) -> usize {
         self.vec.len()
     }
+
+    pub fn own_one(self) -> Option<(SExpr, SExprs)> {
+        let mut iter = self.vec.into_iter();
+        let x1 = iter.next()?;
+        Some((x1, iter.collect()))
+    }
+
+    pub fn own_two(self) -> Option<(SExpr, SExpr, SExprs)> {
+        let mut iter = self.vec.into_iter();
+        let x1 = iter.next()?;
+        let x2 = iter.next()?;
+        Some((x1, x2, iter.collect()))
+    } 
+
+    pub fn own_three(self) -> Option<(SExpr, SExpr, SExpr, SExprs)> {
+        let mut iter = self.vec.into_iter();
+        let x1 = iter.next()?;
+        let x2 = iter.next()?;
+        let x3 = iter.next()?;
+        Some((x1, x2, x3, iter.collect()))
+    } 
 }
 
 // FIXME: does unneccesarry cloning when called, refactor with into_iter

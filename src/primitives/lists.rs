@@ -1,43 +1,53 @@
 use parser::SExpr;
-use parser::SExprs;
 use evaluator::Args;
 
 pub fn list(args: Args) -> SExpr {
-    let list : SExprs = args.all()
-        .iter()
-        .map(|x| x.eval(&args.env))
-        .collect();
-
-    SExpr::List(list)
+    SExpr::List(args.eval())
 }
 
-// TODO: generalize following functions, using SliceIndex?
-pub fn car(args: Args) -> SExpr {
-    if args.len() != 1 {
-        panic!("Wrong argument count to car.");
-    }
+pub fn cons(args: Args) -> SExpr {
+    let (x, xs, _rest) = args.evaled()
+        .own_two()
+        .expect("Expected an obj and a list as arguments, found something else.");
 
-    let list = &args.eval()[0];
-    match list {
-        SExpr::List(x) => x[0].clone(),
-        _              => panic!("Wrong type of argument to car.")
+    match xs {
+        SExpr::List(mut xs) => {
+            xs.insert(0, x);
+            SExpr::List(xs)
+        },
+        SExpr::DottedList(mut xs, y) => {
+            xs.insert(0, x);
+            SExpr::DottedList(xs, y)
+        },
+        y => SExpr::DottedList(vec![x], Box::new(y))
+    }
+}
+
+pub fn car(args: Args) -> SExpr {
+    let (xs, _rest) = args.evaled()
+        .own_one()
+        .expect("Expected a list as argument, found something else.");
+
+    match xs {
+        SExpr::List(ys) | SExpr::DottedList(ys, _) => ys.into_iter().next().unwrap(),
+        x => panic!("Expected a list as argument, got this: {}", x)
     }
 }
 
 pub fn cdr(args: Args) -> SExpr {
-    if args.len() != 1 {
-        panic!("Wrong argument count to cdr.");
-    }
+    let (xs, _rest) = args.evaled()
+        .own_one()
+        .expect("Expected a list as argument, found something else.");
 
-    let list = &args.eval()[0];
-    match list {
-        SExpr::List(x) => {
-            let result = x.get(1..)
-                .expect("The list is not big enough.")
-                .to_vec();
-
-            SExpr::List(result)
+    match xs {
+        SExpr::List(ys) => SExpr::List(ys.into_iter().skip(1).collect()),
+        SExpr::DottedList(ys, y) => {
+            if ys.len() == 1 {
+                *y
+            } else {
+                SExpr::DottedList(ys.into_iter().skip(1).collect(), y)
+            }
         },
-        _ => panic!("Wrong type of argument to cdr.")
+        x => panic!("Expected a list as argument, got this: {}", x)
     }
 }

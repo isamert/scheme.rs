@@ -44,6 +44,7 @@ pub fn env() -> EnvValues {
         "or"   => conditionals::or,
 
         "list" => lists::list,
+        "cons" => lists::cons,
         "car"  => lists::car,
         "cdr"  => lists::cdr,
 
