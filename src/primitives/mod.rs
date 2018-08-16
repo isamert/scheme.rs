@@ -5,6 +5,7 @@ pub mod equivalence;
 pub mod ordering;
 pub mod conditionals;
 pub mod io;
+pub mod system;
 
 use env::EnvValues;
 
@@ -64,6 +65,12 @@ pub fn env() -> EnvValues {
         "write-string"     => io::write_string,
         "display"          => io::display,
         "newline"          => io::newline,
-        "close-port"       => io::close_port
+        "close-port"       => io::close_port,
+
+        "load"         => system::load,
+        "file-exists?" => system::file_exists,
+        "delete-file"  => system::delete_file,
+        "get-environment-variable"  => system::get_environment_variable,
+        "get-environment-variables" => system::get_environment_variables
     }
 }

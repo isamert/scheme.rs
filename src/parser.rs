@@ -106,6 +106,10 @@ impl SExpr {
         SExpr::Lazy(Box::new(x))
     }
 
+    pub fn dottedlist(x: SExprs, y: SExpr) -> SExpr {
+        SExpr::DottedList(x, Box::new(y))
+    }
+
     pub fn to_bool(&self) -> bool {
         // Anything other than #f is treated as true.
         match self {
