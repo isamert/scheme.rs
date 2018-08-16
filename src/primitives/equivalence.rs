@@ -1,3 +1,4 @@
+use lexer::Token;
 use parser::SExpr;
 use evaluator::Args;
 
@@ -34,6 +35,13 @@ where F: (FnMut(&Args) -> bool) {
     }
 
     let result = match (&args[0], &args[1]) {
+        (SExpr::Atom(Token::Symbol(x)), SExpr::Atom(Token::Symbol(y))) => x == y,
+        (x@SExpr::Atom(Token::Symbol(_)), y@SExpr::Atom(_)) => {
+            x.eval_ref(&args.env, |x| x == y)
+        },
+        (x@SExpr::Atom(_), y@SExpr::Atom(Token::Symbol(_))) => {
+            y.eval_ref(&args.env, |y| x == y)
+        },
         (SExpr::Atom(x), SExpr::Atom(y)) => x == y,
         _ => {
             non_atom(&args)
