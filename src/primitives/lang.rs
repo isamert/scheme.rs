@@ -7,47 +7,45 @@ use procedure::ProcedureData;
 use env::EnvRefT;
 use env::EnvRef;
 use env::Env;
+use serr::{SErr, SResult};
 
-pub fn define(args: Args) -> SExpr {
+pub fn define(args: Args) -> SResult<SExpr> {
     env_add(EnvAddType::Define, args)
 }
 
-pub fn set(args: Args) -> SExpr {
+pub fn set(args: Args) -> SResult<SExpr> {
     env_add(EnvAddType::Set, args)
 }
 
-pub fn lambda(args: Args) -> SExpr {
+pub fn lambda(args: Args) -> SResult<SExpr> {
     let env = args.env();
-    let (params, body) = args.into_split()
-        .expect("Expected a parameter list and function body, found something else");
+    let (params, body) = args.into_split()?;
     ProcedureData::new_compound(params, body, &env)
 }
 
-pub fn let_(args: Args) -> SExpr {
+pub fn let_(args: Args) -> SResult<SExpr> {
     let_generic(args, |expr, _, parent_env| expr.eval(parent_env))
 }
 
-pub fn let_star(args: Args) -> SExpr {
+pub fn let_star(args: Args) -> SResult<SExpr> {
     let_generic(args, |expr, env, _| expr.eval(env))
 }
 
-pub fn let_rec(args: Args) -> SExpr {
-    let_generic(args, |expr, _, _| SExpr::lazy(expr.clone()))
+pub fn let_rec(args: Args) -> SResult<SExpr> {
+    let_generic(args, |expr, _, _| Ok(SExpr::lazy(expr.clone())))
 }
 
-pub fn quote(args: Args) -> SExpr {
+pub fn quote(args: Args) -> SResult<SExpr> {
     if args.len() != 1 {
-        panic!("Wrong number of arguments while using `quote`.");
+        bail!(WrongArgCount => 1 as usize, args.len())
     }
 
-    args.get(0)
-        .unwrap()
-        .clone()
+    Ok(args[0].clone())
 }
 
-pub fn quasiquote(args: Args) -> SExpr {
+pub fn quasiquote(args: Args) -> SResult<SExpr> {
     if args.len() != 1 {
-        panic!("Wrong number of arguments while using `quote`.");
+        bail!(WrongArgCount => 1 as usize, args.len())
     }
 
     let level = match args.extra {
@@ -65,20 +63,20 @@ pub fn quasiquote(args: Args) -> SExpr {
     if level == 1 {
         eval_unquoted(args)
     } else if level > 1 {
-        SExpr::quasiquote(vec!(eval_unquoted(args)))
+        Ok(SExpr::quasiquote(vec![eval_unquoted(args)?]))
     } else {
-        panic!("Wrong call to ```.")
+        bail!(Generic -> "Wrong usage of quasiquote")
     }
 }
 
-pub fn unquote(args: Args) -> SExpr {
+pub fn unquote(args: Args) -> SResult<SExpr> {
     if args.len() != 1 {
-        panic!("Wrong number of arguments while using `quote`.");
+        bail!(WrongArgCount => 1 as usize, args.len())
     }
 
     let level = match args.extra {
         Extra::QQLevel(x) => x - 1,
-        _ => panic!("`unquote` is outside of `quasiquote`.")
+        _ => bail!(Generic -> "Usage of unquote outside of quasiquote")
     };
 
     let env = args.env();
@@ -88,15 +86,15 @@ pub fn unquote(args: Args) -> SExpr {
         arg.eval(&env)
     } else if level > 0 {
         let args = Args::new_with_extra(vec![arg], Extra::QQLevel(level), &env);
-        SExpr::unquote(eval_unquoted(args))
+        Ok(SExpr::unquote(eval_unquoted(args)?))
     } else {
-        panic!("Wrong call to `,`.")
+        bail!(Generic -> "Wrong usage of unquote")
     }
 }
 
-pub fn eval_unquoted(args: Args) -> SExpr {
+pub fn eval_unquoted(args: Args) -> SResult<SExpr> {
     let arg = args.get(0)
-        .expect("Expected argument found nothing.");
+        .ok_or_else(|| SErr::WrongArgCount(1,0))?;
 
     let level = match args.extra {
         Extra::QQLevel(x) => x,
@@ -112,16 +110,16 @@ pub fn eval_unquoted(args: Args) -> SExpr {
                 quasiquote(Args::new_with_extra(xs[1..].to_vec(), Extra::QQLevel(level), &args.env))
             },
             SExpr::List(ref xs2) => {
-                SExpr::List(vec![eval_unquoted(Args::new_with_extra(vec![SExpr::List(xs2.clone())], Extra::QQLevel(level), &args.env))])
+                Ok(SExpr::List(vec![eval_unquoted(Args::new_with_extra(vec![SExpr::List(xs2.clone())], Extra::QQLevel(level), &args.env))?]))
             },
             _ => {
                 let result = xs.iter()
                     .map(|x| eval_unquoted(Args::new_with_extra(vec![x.clone()], Extra::QQLevel(level), &args.env)))
-                    .collect();
-                SExpr::List(result)
+                    .collect::<SResult<_>>();
+                Ok(SExpr::List(result?))
             }
         },
-        x => x.clone()
+        x => Ok(x.clone())
     }
 }
 
@@ -134,38 +132,33 @@ enum EnvAddType {
     Set
 }
 
-fn env_add(t: EnvAddType, args: Args) -> SExpr {
+fn env_add(t: EnvAddType, args: Args) -> SResult<SExpr> {
     let env = args.env();
     let name_expr = args.get(0)
-        .expect("Expected an identifier, found nothing.")
+        .ok_or_else(|| SErr::new_id_not_found("nothing"))?
         .clone();
 
     let (id, value) = match name_expr {
         SExpr::Atom(Token::Symbol(id)) => {
             let value = args.get(1)
-                .expect("Expected an expression, found nothing.");
+                .ok_or_else(|| SErr::new_expr_not_found("nothing"))?;
 
-            let value_sexpr = value.eval(&args.env);
+            let value_sexpr = value.eval(&args.env)?;
 
             (id.clone(), value_sexpr)
         },
         SExpr::List(_) => {
-            let (header, body) = args.into_split()
-                .expect("Expected a definition, found something else.");
+            let (header, body) = args.into_split()?;
+            let (id, params) = header.into_split()?;
 
-            let (id, params) = header
-                .into_split()
-                .expect("");
-
-            (id.into_symbol().unwrap(), ProcedureData::new_compound(SExpr::List(params), body, &env))
+            (id.into_symbol()?, ProcedureData::new_compound(SExpr::List(params), body, &env)?)
         },
         SExpr::DottedList(xs,y) => {
             let mut iter = xs.into_iter();
             let id = iter.next()
-                .expect("Expected an identifier, found nothing.");
+                .ok_or_else(|| SErr::new_generic("Expected an identifier, found nothing."))?;
             let head = iter.take_while(|_| true).collect::<SExprs>();
-            let (_, body) = args.into_split()
-                .expect("Expected a procedure body, found nothing.");
+            let (_, body) = args.into_split()?;
 
             let arg_list = match head.len() {
                 // (define (x . y) ...)
@@ -174,7 +167,7 @@ fn env_add(t: EnvAddType, args: Args) -> SExpr {
                 _ => SExpr::DottedList(head, y)
             };
 
-            (id.into_symbol().unwrap(), ProcedureData::new_compound(arg_list, body, &env))
+            (id.into_symbol()?, ProcedureData::new_compound(arg_list, body, &env)?)
         },
         _ => panic!("Expected an identifier, not an expr.")
     };
@@ -183,17 +176,16 @@ fn env_add(t: EnvAddType, args: Args) -> SExpr {
     match t {
         EnvAddType::Define => {
             env.define(id.clone(), value);
-            SExpr::Unspecified
+            Ok(SExpr::Unspecified)
         },
         EnvAddType::Set => {
             env.set(id.clone(), value)
-                .expect(&format!("Unbound variable: {}", id))
         }
     }
 }
 
-pub fn let_generic<F>(args: Args, mut eval_expr: F) -> SExpr
-where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SExpr) {
+pub fn let_generic<F>(args: Args, mut eval_expr: F) -> SResult<SExpr>
+where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SResult<SExpr>) {
     let parent_env = args.env();
     let (bindings, body) = args.into_split()
         .expect("Expected a list of bindings and body, found something else.");
@@ -216,7 +208,7 @@ where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SExpr) {
         let expr = bind.get(1)
             .expect("Expected an expression, found nothing");
 
-        env.define(id, eval_expr(expr, &env, &parent_env));
+        env.define(id, eval_expr(expr, &env, &parent_env)?);
     }
 
     let mut result = None;

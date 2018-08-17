@@ -4,7 +4,7 @@ use std::fs::OpenOptions;
 use std::io;
 use std::io::{BufReader, BufWriter, Stdin, Stdout};
 
-use parser::SExpr;
+use serr::{SErr, SResult};
 
 #[derive(Debug)]
 pub enum PortData {
@@ -35,9 +35,8 @@ macro_rules! port_read_str_fn(
     ($br: ident, $fn: ident) => {
         {
             let mut result = String::new();
-            let size = $br.$fn(&mut result)
-                .expect("Can't read file");
-            (size, result)
+            let size = $br.$fn(&mut result)?;
+            Ok((size, result))
         }
     };
 );
@@ -48,51 +47,46 @@ macro_rules! port_read_chr(
     ($br: ident) => {
         {
             let mut chr = [0; 1];
-            $br.read_exact(&mut chr)
-                .expect("Can't read file");
-            (1, chr[0] as char)
+            $br.read_exact(&mut chr)?;
+            Ok((1, chr[0] as char))
         }
     };
 );
 
 impl PortData {
-    pub fn new_textual_file_input(path: &str) -> PortData {
+    pub fn new_textual_file_input(path: &str) -> SResult<PortData> {
         let file = OpenOptions::new()
             .read(true)
-            .open(path)
-            .expect(&format!("Can't open file: {}", path));
+            .open(path)?;
 
-        PortData::TextualFileInput(path.to_string(), BufReader::new(file))
+        Ok(PortData::TextualFileInput(path.to_string(), BufReader::new(file)))
     }
 
 
-    pub fn new_textual_file_output(path: &str) -> PortData {
+    pub fn new_textual_file_output(path: &str) -> SResult<PortData> {
         let file = OpenOptions::new()
             .create_new(true)
             .write(true)
-            .open(path)
-            .expect(&format!("Can't open file: {}", path));
+            .open(path)?;
 
-        PortData::TextualFileOutput(path.to_string(), BufWriter::new(file))
+        Ok(PortData::TextualFileOutput(path.to_string(), BufWriter::new(file)))
     }
 
-    pub fn new_binary_file_input(path: &str) -> PortData {
+    pub fn new_binary_file_input(path: &str) -> SResult<PortData> {
         let file = OpenOptions::new()
             .read(true)
-            .open(path)
-            .expect(&format!("Can't open file: {}", path));
+            .open(path)?;
 
-        PortData::BinaryFileInput(path.to_string(), BufReader::new(file))
+        Ok(PortData::BinaryFileInput(path.to_string(), BufReader::new(file)))
     }
 
-    pub fn new_binary_file_output(path: &str) -> PortData {
+    pub fn new_binary_file_output(path: &str) -> SResult<PortData> {
         let file = OpenOptions::new()
             .create_new(true)
             .write(true)
-            .open(path)
-            .expect(&format!("Can't open file: {}", path));
+            .open(path)?;
 
-        PortData::BinaryFileOutput(path.to_string(), BufWriter::new(file))
+        Ok(PortData::BinaryFileOutput(path.to_string(), BufWriter::new(file)))
     }
 
     pub fn current_input() -> PortData {
@@ -108,72 +102,73 @@ impl PortData {
     //
     // Read functions
     //
-    pub fn read_line(&mut self) -> (usize, String) {
+    pub fn read_line(&mut self) -> SResult<(usize, String)> {
         match self {
             PortData::TextualFileInput(_, br) => port_read_str_fn!(br, read_line),
             PortData::StdInput(br) => port_read_str_fn!(br, read_line),
-            _ => panic!("Can't read from this type of port.")
+            // FIXME: fix this and the functions below
+            x => bail!(WrongPort => "read-line".to_string(), "TODO:PORT_NAME_HERE")
         }
     }
 
-    pub fn read_char(&mut self) -> (usize, char) {
+    pub fn read_char(&mut self) -> SResult<(usize, char)> {
         // FIXME: this only reads 1 u8 and casts it to char
         match self {
             PortData::TextualFileInput(_, br) => port_read_chr!(br),
             PortData::StdInput(br) => port_read_chr!(br),
-            _ => panic!("Can't read from this type of port.")
+            x => bail!(WrongPort => "read-char".to_string(), "TODO:PORT_NAME_HERE")
         }
     }
 
-    pub fn read_all_str(&mut self) -> (usize, String) {
+    pub fn read_all_str(&mut self) -> SResult<(usize, String)> {
         match self {
             PortData::TextualFileInput(_, br) => port_read_str_fn!(br, read_to_string),
             PortData::StdInput(br) => port_read_str_fn!(br, read_to_string),
-            _ => panic!("Can't read from this type of port.")
+            x => bail!(WrongPort => "read-all-str".to_string(), "TODO:PORT_NAME_HERE")
         }
     }
 
-    pub fn read_u8(&mut self) -> (usize, u8) {
+    pub fn read_u8(&mut self) -> SResult<(usize, u8)> {
         match self {
             PortData::BinaryFileInput(_, br) => {
                 let mut u8s = [0; 1];
-                br.read_exact(&mut u8s)
-                    .expect("Can't read file");
+                br.read_exact(&mut u8s)?;
 
-                (1, u8s[0])
+                Ok((1, u8s[0]))
             },
-            _ => panic!("Can't read from this type of port.")
+            x => bail!(WrongPort => "read-u8".to_string(), "TODO:PORT_NAME_HERE")
         }
     }
 
-    pub fn read_all_u8(&mut self) -> (usize, Vec<u8>) {
+    pub fn read_all_u8(&mut self) -> SResult<(usize, Vec<u8>)> {
         match self {
             PortData::BinaryFileInput(_, br) => {
                 let mut u8s = vec![];
-                let size = br.read_to_end(&mut u8s)
-                    .expect("Can't read file");
+                let size = br.read_to_end(&mut u8s)?;
 
-                (size, u8s)
+                Ok((size, u8s))
             },
-            _ => panic!("Can't read from this type of port.")
+            x => bail!(WrongPort => "read-all-u8".to_string(), "TODO:PORT_NAME_HERE")
         }
     }
 
     //
     // Write functions
     //
-    pub fn write_string(&mut self, string: &str) -> () {
+    pub fn write_string(&mut self, string: &str) -> SResult<()> {
         match self {
             PortData::TextualFileOutput(_,br) => {
-                write!(br, "{}", string);
-                br.flush();
+                write!(br, "{}", string)?;
+                br.flush()?;
             },
             PortData::StdOutput(br) => {
-                write!(br, "{}", string);
-                br.flush();
+                write!(br, "{}", string)?;
+                br.flush()?;
             },
-            _ => panic!("Can't write to this type of port: {}")
-        }
+            x => bail!(WrongPort => "write-string".to_string(), "TODO:PORT_NAME_HERE")
+        };
+
+        Ok(())
     }
 
     //

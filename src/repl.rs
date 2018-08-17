@@ -14,15 +14,26 @@ pub fn run(env: EnvRef) {
         let tokens = lexer::tokenize(&line.unwrap());
         let sexprs = parser::parse(tokens);
 
-        for sexpr in sexprs {
-            let evaluated = sexpr.eval(&env);
+        match sexprs {
+            Ok(sexprs) => {
+                for sexpr in sexprs {
+                    let evaluated = sexpr.eval(&env);
 
-            if !evaluated.is_unspecified() {
-                println!("${} = {}", i, evaluated);
-                env.define(format!("${}", i), evaluated);
-            }
+                    match evaluated {
+                        Ok(evaluated) => {
+                            if !evaluated.is_unspecified() {
+                                println!("${} = {}", i, evaluated);
+                                env.define(format!("${}", i), evaluated);
+                            }
+                        },
+                        Err(e) => println!("{}", e)
+                    }
 
-            i += 1;
+                    i += 1;
+                }
+            },
+            Err(e) => println!("{}", e)
         }
+
     }
 }

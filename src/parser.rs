@@ -9,6 +9,7 @@ use procedure::ProcedureData;
 use evaluator;
 use env::EnvRef;
 use ports::PortData;
+use serr::{SErr, SResult};
 
 pub type SExprs = Vec<SExpr>;
 
@@ -50,11 +51,11 @@ impl PartialOrd for SExpr {
 }
 
 impl Not for SExpr {
-    type Output = SExpr;
-    fn not(self) -> SExpr {
+    type Output = SResult<SExpr>;
+    fn not(self) -> SResult<SExpr> {
         match self {
-            SExpr::Atom(Token::Boolean(x)) => SExpr::boolean(!x),
-            _ => panic!("Wrong type, expected boolean found: {}", self)
+            SExpr::Atom(Token::Boolean(x)) => Ok(SExpr::boolean(!x)),
+            _ => bail!(TypeMismatch => "boolean", self)
         }
     }
 }
@@ -155,151 +156,152 @@ impl SExpr {
     }
 
     // Borrows
-    pub fn as_port(&self) -> Option<&PortData> {
+    pub fn as_port(&self) -> SResult<&PortData> {
         match self {
-            SExpr::Port(ref pd) => Some(pd),
-            _ => None
+            SExpr::Port(ref pd) => Ok(pd),
+            x => bail!(TypeMismatch => "port", x.clone())
         }
     }
 
-    pub fn as_port_mut(&mut self) -> Option<&mut PortData> {
+    pub fn as_port_mut(&mut self) -> SResult<&mut PortData> {
         match self {
-            SExpr::Port(ref mut pd) => Some(pd),
-            _ => None
+            SExpr::Port(ref mut pd) => Ok(pd),
+            x => bail!(TypeMismatch => "port", x.clone())
         }
     }
 
-    pub fn as_symbol(&self) -> Option<String> {
+    pub fn as_symbol(&self) -> SResult<String> {
         match self {
-            SExpr::Atom(Token::Symbol(x)) => Some(x.to_string()),
-            _ => None
+            SExpr::Atom(Token::Symbol(x)) => Ok(x.to_string()),
+            x => bail!(TypeMismatch => "string", x.clone())
         }
     }
 
     // Transforms
-    pub fn into_symbol(self) -> Option<String> {
+    pub fn into_symbol(self) -> SResult<String> {
         match self {
-            SExpr::Atom(Token::Symbol(x)) => Some(x),
-            _ => None
+            SExpr::Atom(Token::Symbol(x)) => Ok(x),
+            x => bail!(TypeMismatch => "symbol", x)
         }
     }
 
-    pub fn into_list(self) -> Option<SExprs> {
+    pub fn into_list(self) -> SResult<SExprs> {
         match self {
-            SExpr::List(xs) => Some(xs),
-            _ => None
+            SExpr::List(xs) => Ok(xs),
+            x => bail!(TypeMismatch => "list", x)
         }
     }
 
-    pub fn into_str(self) -> Option<String> {
+    pub fn into_str(self) -> SResult<String> {
         match self {
-            SExpr::Atom(Token::Str(x)) => Some(x),
-            _ => None
+            SExpr::Atom(Token::Str(x)) => Ok(x),
+            x => bail!(TypeMismatch => "string", x)
         }
     }
 
-    pub fn into_chr(self) -> Option<char> {
+    pub fn into_chr(self) -> SResult<char> {
         match self {
-            SExpr::Atom(Token::Chr(x)) => Some(x),
-            _ => None
+            SExpr::Atom(Token::Chr(x)) => Ok(x),
+            x => bail!(TypeMismatch => "char", x)
         }
     }
 
     // Transform operations
-    pub fn into_split(self) -> Option<(SExpr, SExprs)> {
+    pub fn into_split(self) -> SResult<(SExpr, SExprs)> {
         match self {
             SExpr::List(xs) => {
                 let mut iter = xs.into_iter();
                 let head = iter.next()
-                    .expect("");
+                    .ok_or_else(|| SErr::FoundNothing)?;
                 let tail = iter.collect();
 
-                Some((head, tail))
+                Ok((head, tail))
             }
-            _ => None
+            x => bail!(TypeMismatch => "list", x)
         }
     }
 
-    pub fn eval(&self, env: &EnvRef) -> SExpr {
+    pub fn eval(&self, env: &EnvRef) -> SResult<SExpr> {
         evaluator::eval(self, env)
     }
 
-    pub fn eval_ref<F,T>(&self, env: &EnvRef, f: F) -> T
-    where F: FnMut(&SExpr)->T {
+    pub fn eval_ref<F,T>(&self, env: &EnvRef, f: F) -> SResult<T>
+    where F: FnMut(&SExpr)->SResult<T> {
         evaluator::eval_ref(self, env, f)
     }
 
-    pub fn eval_mut_ref<F,T>(&self, env: &EnvRef, f: F) -> T
-    where F: FnMut(&mut SExpr)->T {
+    pub fn eval_mut_ref<F,T>(&self, env: &EnvRef, f: F) -> SResult<T>
+    where F: FnMut(&mut SExpr)->SResult<T> {
         evaluator::eval_mut_ref(self, env, f)
     }
 }
 
-pub fn parse(tokens: Vec<Token>) -> SExprs {
+pub fn parse(tokens: Vec<Token>) -> SResult<SExprs> {
     let mut iter = tokens.into_iter().peekable();
     let mut exprs: SExprs = vec![];
 
     while let Some(_) = iter.peek() {
-        exprs.push(parse_helper(&mut iter));
+        exprs.push(parse_helper(&mut iter)?);
     }
 
-    exprs
+    Ok(exprs)
 }
 
-fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SExpr {
+fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SResult<SExpr> {
     match iter.peek() {
-        Some(&Token::RParen) => panic!("Not expected a `)`."),
+        Some(&Token::RParen) => bail!(UnexpectedToken => Token::RParen),
         Some(&Token::LParen) => {
             iter.next(); // Consume LParen
 
             // Check if empty list
             if iter.peek() == Some(&Token::RParen) {
                 iter.next(); // Consume RParen
-                return SExpr::List(vec![]);
+                return Ok(SExpr::List(vec![]));
             }
 
             let mut head: SExprs = vec![];
             while iter.peek() != Some(&Token::RParen) &&
                     iter.peek() != Some(&Token::Dot) {
-                head.push(parse_helper(iter));
+                head.push(parse_helper(iter)?);
             }
 
             match iter.next() {
                 Some(Token::Dot) => {
-                    let tail = parse_helper(iter);
+                    let tail = parse_helper(iter)?;
                     if iter.peek() != Some(&Token::RParen) {
-                        panic!("Expected `)`, but found this: {:?}", iter.peek())
+                        let unexpected = iter.peek().unwrap().clone();
+                        bail!(NotExpectedToken => unexpected, Token::RParen)
                     } else {
                         iter.next(); // Consume RParen
-                        SExpr::DottedList(head, Box::new(tail))
+                        Ok(SExpr::DottedList(head, Box::new(tail)))
                     }
                 },
                 Some(Token::RParen) => {
-                    SExpr::List(head)
+                    Ok(SExpr::List(head))
                 },
-                x => panic!("Not expected a {:?}", x)
+                x => bail!(UnexpectedToken => x.unwrap()),
             }
         },
         Some(&Token::Quote) => {
             iter.next();
-            SExpr::List(vec![SExpr::symbol("quote"), parse_helper(iter)])
+            Ok(SExpr::List(vec![SExpr::symbol("quote"), parse_helper(iter)?]))
         },
         Some(&Token::UnQuote) => {
             iter.next();
-            SExpr::List(vec![SExpr::symbol("unquote"), parse_helper(iter)])
+            Ok(SExpr::List(vec![SExpr::symbol("unquote"), parse_helper(iter)?]))
         },
         Some(&Token::QuasiQuote) => {
             iter.next();
-            SExpr::List(vec![SExpr::symbol("quasiquote"), parse_helper(iter)])
+            Ok(SExpr::List(vec![SExpr::symbol("quasiquote"), parse_helper(iter)?]))
         },
         Some(&Token::UnQuoteSplicing) => {
             iter.next();
-            SExpr::List(vec![SExpr::symbol("unquote-splicing"), parse_helper(iter)])
+            Ok(SExpr::List(vec![SExpr::symbol("unquote-splicing"), parse_helper(iter)?]))
         },
         Some(_) => {
             let y = iter.next().unwrap();
-            SExpr::Atom(y)
+            Ok(SExpr::Atom(y))
         },
-        None => panic!("Expected a token, found none."),
+        None => serr!(FoundNothing)
     }
 }

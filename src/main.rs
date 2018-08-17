@@ -1,6 +1,9 @@
 #[macro_use]
 mod util;
 
+#[macro_use]
+mod serr;
+
 mod env;
 mod lexer;
 mod parser;

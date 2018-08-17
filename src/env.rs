@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use parser::SExpr;
 use parser::SExprs;
+use serr::{SErr, SResult};
 
 pub type VarName = String;
 pub type EnvValues = HashMap<VarName, SExpr>;
@@ -18,12 +19,12 @@ pub struct Env {
 pub trait EnvRefT {
     fn clone_ref(&self) -> EnvRef;
 
-    fn get(&self, &str) -> Option<SExpr>;
-    fn with_ref<F,T>(&self, name: &str, j: F) -> T where F: FnMut(Option<&SExpr>)->T;
-    fn with_mut_ref<F,T>(&self, name: &str, f: F) -> T where F: FnMut(Option<&mut SExpr>)->T;
+    fn get(&self, &str) -> SResult<SExpr>;
+    fn with_ref<F,T>(&self, name: &str, j: F) -> SResult<T> where F: FnMut(&SExpr)->SResult<T>;
+    fn with_mut_ref<F,T>(&self, name: &str, f: F) -> SResult<T> where F: FnMut(&mut SExpr)->SResult<T>;
     fn define(&self, String, SExpr);
-    fn set(&self, String, SExpr) -> Option<SExpr>;
-    fn remove(&self, &str) -> Option<SExpr>;
+    fn set(&self, String, SExpr) -> SResult<SExpr>;
+    fn remove(&self, &str) -> SResult<SExpr>;
 
     fn is_some(&self) -> bool;
 }
@@ -39,10 +40,10 @@ impl EnvRefT for EnvRef {
             .is_some()
     }
 
-    fn get(&self, name: &str) -> Option<SExpr> {
+    fn get(&self, name: &str) -> SResult<SExpr> {
         self.borrow()
             .as_ref()
-            .expect("Cannot find environment")
+            .ok_or_else(|| SErr::EnvNotFound)?
             .get(name)
     }
 
@@ -51,40 +52,40 @@ impl EnvRefT for EnvRef {
     /// It's impossible to return a reference to something inside a RefCell.
     /// (Actually it's quite possible trough std::cell::Ref but not in this
     /// particular case) So we need this extra functions.
-    fn with_ref<F,T>(&self, name: &str, f: F) -> T
-    where F: FnMut(Option<&SExpr>)->T {
+    fn with_ref<F,T>(&self, name: &str, f: F) -> SResult<T>
+    where F: FnMut(&SExpr)->SResult<T> {
         self.borrow()
             .as_ref()
-            .expect("Cannot find environment")
+            .ok_or_else(|| SErr::EnvNotFound)?
             .with_ref(name, f)
     }
 
-    fn with_mut_ref<F,T>(&self, name: &str, f: F) -> T
-    where F: FnMut(Option<&mut SExpr>)->T {
+    fn with_mut_ref<F,T>(&self, name: &str, f: F) -> SResult<T>
+    where F: FnMut(&mut SExpr)->SResult<T> {
         self.borrow_mut()
             .as_mut()
-            .expect("Cannot find environment")
+            .ok_or_else(|| SErr::EnvNotFound)?
             .with_mut_ref(name, f)
     }
 
     fn define(&self, key: String, val: SExpr) {
         self.borrow_mut()
             .as_mut()
-            .expect("Cannot find environment")
+            .expect("Can't find environment")
             .define(key, val);
     }
 
-    fn set(&self, key: String, val: SExpr) -> Option<SExpr> {
+    fn set(&self, key: String, val: SExpr) -> SResult<SExpr> {
         self.borrow_mut()
             .as_mut()
-            .expect("Cannot find environment")
+            .ok_or_else(|| SErr::EnvNotFound)?
             .set(key, val)
     }
 
-    fn remove(&self, key: &str) -> Option<SExpr> {
+    fn remove(&self, key: &str) -> SResult<SExpr> {
         self.borrow_mut()
             .as_mut()
-            .expect("Cannot find environment")
+            .ok_or_else(|| SErr::EnvNotFound)?
             .remove(key)
     }
 }
@@ -117,45 +118,45 @@ impl Env {
         Rc::new(RefCell::new(Some(self)))
     }
 
-    pub fn get(&self, name: &str) -> Option<SExpr> {
+    pub fn get(&self, name: &str) -> SResult<SExpr> {
         if self.values.contains_key(name) {
-            Some(self.values[name].clone())
+            Ok(self.values[name].clone())
         } else if self.parent.is_some() {
             self.parent.get(name)
         } else {
-            None
+            bail!(UnboundVar -> name)
         }
     }
 
-    pub fn with_ref<F,T>(&self, name: &str, mut f: F) -> T
-    where F: FnMut(Option<&SExpr>)->T {
+    pub fn with_ref<F,T>(&self, name: &str, mut f: F) -> SResult<T>
+    where F: FnMut(&SExpr)->SResult<T> {
         if self.values.contains_key(name) {
             let sexpr = &self.values[name];
-            f(Some(sexpr))
+            f(sexpr)
         } else if self.parent.is_some() {
             self.parent
                 .borrow()
                 .as_ref()
-                .expect("zaxd")
+                .ok_or_else(|| SErr::new_unbound_var(name))?
                 .with_ref(name, f)
         } else {
-            f(None)
+            bail!(UnboundVar -> name)
         }
     }
 
-    pub fn with_mut_ref<F,T>(&mut self, name: &str, mut f: F) -> T
-    where F: FnMut(Option<&mut SExpr>)->T{
+    pub fn with_mut_ref<F,T>(&mut self, name: &str, mut f: F) -> SResult<T>
+    where F: FnMut(&mut SExpr)->SResult<T>{
         if self.values.contains_key(name) {
             let sexpr = self.values.get_mut(name).unwrap();
-            f(Some(sexpr))
+            f(sexpr)
         } else if self.parent.is_some() {
             self.parent
                 .borrow_mut()
                 .as_mut()
-                .expect("zaxd")
+                .ok_or_else(|| SErr::new_unbound_var(name))?
                 .with_mut_ref(name, f)
         } else {
-            f(None)
+            bail!(UnboundVar -> name)
         }
     }
 
@@ -163,23 +164,25 @@ impl Env {
         self.values.insert(key, val);
     }
 
-    pub fn set(&mut self, key: String, val: SExpr) -> Option<SExpr> {
+    pub fn set(&mut self, key: String, val: SExpr) -> SResult<SExpr> {
         if self.values.contains_key(&key) {
-            self.values.insert(key, val)
+            self.values.insert(key.clone(), val)
+                .ok_or_else(|| SErr::new_unbound_var(&key))
         } else if self.parent.is_some() {
             self.parent.set(key, val)
         } else {
-            None
+            bail!(UnboundVar => key)
         }
     }
 
-    pub fn remove(&mut self, key: &str) -> Option<SExpr> {
+    pub fn remove(&mut self, key: &str) -> SResult<SExpr> {
         if self.values.contains_key(key) {
             self.values.remove(key)
+                .ok_or_else(|| SErr::new_unbound_var(key))
         } else if self.parent.is_some() {
             self.parent.remove(key)
         } else {
-            None
+            bail!(UnboundVar -> key)
         }
     }
 

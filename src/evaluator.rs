@@ -5,67 +5,65 @@ use parser::SExpr;
 use parser::SExprs;
 use env::EnvRef;
 use env::EnvRefT;
+use serr::{SErr, SResult};
 
-pub fn eval_mut_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> T
-where F: FnMut(&mut SExpr)->T {
+pub fn eval_mut_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> SResult<T>
+where F: FnMut(&mut SExpr)->SResult<T> {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
-            env.with_mut_ref(x, |var_ref| {
-                let result = var_ref.expect(&format!("Unbound variable: {}", x));
+            env.with_mut_ref(x, |result| {
                 match result {
-                    SExpr::Lazy(_) => f(&mut result.eval(env)),
+                    SExpr::Lazy(_) => f(&mut result.eval(env)?),
                     _ => f(result)
                 }
             })
         },
-        x => f(&mut eval(x, env))
+        x => f(&mut eval(x, env)?)
     }
 }
 
-pub fn eval_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> T
-where F: FnMut(&SExpr)->T {
+pub fn eval_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> SResult<T>
+where F: FnMut(&SExpr)->SResult<T> {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
-            env.with_ref(x, |var_ref| {
-                let result = var_ref.expect(&format!("Unbound variable: {}", x));
+            env.with_ref(x, |result| {
                 match result {
-                    SExpr::Lazy(_) => f(&result.eval(env)),
+                    SExpr::Lazy(_) => f(&result.eval(env)?),
                     _ => f(result)
                 }
             })
         },
-        x => f(&eval(x, env))
+        x => f(&eval(x, env)?)
     }
 }
 
-pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
+pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SResult<SExpr> {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
-            let result = env.get(x)
-                .expect(&format!("Unbound variable: {}", x));
+            let result = env.get(x)?;
 
             match result {
                 SExpr::Lazy(_) => result.eval(env),
-                _ => result
+                _ => Ok(result)
             }
         },
         SExpr::Atom(x) => {
-            SExpr::Atom(x.clone())
+            Ok(SExpr::Atom(x.clone()))
         },
         SExpr::Procedure(x) => {
-            SExpr::Procedure(x.clone())
+            Ok(SExpr::Procedure(x.clone()))
         },
         SExpr::Unspecified => {
-            SExpr::Unspecified
+            Ok(SExpr::Unspecified)
         },
         SExpr::Lazy(expr) => {
             expr.eval(&env)
         },
         SExpr::Vector(vec) => {
-            SExpr::Vector(vec.clone())
+            Ok(SExpr::Vector(vec.clone()))
         },
         SExpr::Port(port) => {
-            SExpr::Port(port.clone())
+            Ok(SExpr::Port(port.clone()))
         },
         list@SExpr::DottedList(_,_) => {
             fn flatten(list: &SExpr) -> SExprs {
@@ -89,7 +87,7 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
         },
         SExpr::List(xs) => {
             let op = xs.get(0)
-                .expect("Expected an operator, found nothing.");
+                .ok_or_else(|| SErr::new_unexpected_form("()"))?;
 
             match op {
                 SExpr::Atom(Token::Symbol(symbol)) => {
@@ -100,12 +98,12 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
                 x => {
                     // Trying to use something other than a symbol as procedure
                     // Evaluate and see if it's a procedure.
-                    let evaled = eval(x, env);
+                    let evaled = eval(x, env)?;
                     if let SExpr::Procedure(x) = evaled {
                         let args = xs[1..].to_args(&env);
                         x.apply(args)
                     } else {
-                        panic!("Wrong type to apply: {:#?}", x)
+                        bail!(NotAProcedure => x.clone())
                     }
                 }
             }
@@ -113,17 +111,16 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SExpr {
     }
 }
 
-pub fn call_procedure(op: &str, args: Args) -> SExpr {
+pub fn call_procedure(op: &str, args: Args) -> SResult<SExpr> {
     let procedure = args.env
-        .get(op)
-        .expect(&format!("Unbound variable: {}", op))
+        .get(op)?
         .clone();
 
-    fn call(proc_expr: SExpr, args: Args) -> SExpr {
+    fn call(proc_expr: SExpr, args: Args) -> SResult<SExpr> {
         match proc_expr {
             SExpr::Procedure(proc) => proc.apply(args),
-            SExpr::Lazy(p) => call(p.eval(&args.env), args),
-            _ => panic!("Not a type to apply: {:#?}", proc_expr)
+            SExpr::Lazy(p) => call(p.eval(&args.env)?, args),
+            _ => bail!(NotAProcedure => proc_expr)
         }
     }
 
@@ -168,15 +165,15 @@ impl Args {
         self.vec
     }
 
-    pub fn into_split(self) -> Option<(SExpr, SExprs)> {
+    pub fn into_split(self) -> SResult<(SExpr, SExprs)> {
         let mut iter = self.vec.into_iter();
         let head = iter.next();
         let tail = iter.collect();
 
         if head.is_some() {
-            Some((head.unwrap(), tail))
+            Ok((head.unwrap(), tail))
         } else {
-            None
+            serr!(FoundNothing)
         }
     }
 
@@ -188,14 +185,14 @@ impl Args {
         &self.vec
     }
 
-    pub fn eval(&self) -> SExprs {
+    pub fn eval(&self) -> SResult<SExprs> {
         self.vec.iter()
             .map(|x| eval(&x, &self.env))
-            .collect::<SExprs>()
+            .collect::<SResult<_>>()
     }
-    
-    pub fn evaled(self) -> Args {
-        Args::new_with_extra(self.eval(), self.extra, &self.env)
+
+    pub fn evaled(self) -> SResult<Args> {
+        Ok(Args::new_with_extra(self.eval()?, self.extra, &self.env))
     }
 
     pub fn map<F>(mut self, mut f: F) -> Args
@@ -222,7 +219,7 @@ impl Args {
         let x1 = iter.next()?;
         let x2 = iter.next()?;
         Some((x1, x2, iter.collect()))
-    } 
+    }
 
     pub fn own_three(self) -> Option<(SExpr, SExpr, SExpr, SExprs)> {
         let mut iter = self.vec.into_iter();
@@ -230,7 +227,7 @@ impl Args {
         let x2 = iter.next()?;
         let x3 = iter.next()?;
         Some((x1, x2, x3, iter.collect()))
-    } 
+    }
 }
 
 // FIXME: does unneccesarry cloning when called, refactor with into_iter
