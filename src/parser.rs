@@ -60,6 +60,23 @@ impl Not for SExpr {
     }
 }
 
+/// One can call .into() into everything and it yields itself, or it yields
+/// the target type if it implements the required From/Into trait.
+/// .into is particularly useful in macros. With that implementation in hand,
+/// I can send a &SExpr to a macro which calls .into() on everything and get
+/// SExpr if it is needed. String/str also implements .into() in same fashion.
+impl<'a> From<&'a SExpr> for SExpr {
+    fn from(e: &SExpr) -> Self {
+        e.clone()
+    }
+}
+
+impl<'a> From<&'a mut SExpr> for SExpr {
+    fn from(e: & mut SExpr) -> Self {
+        e.clone()
+    }
+}
+
 #[allow(dead_code)]
 impl SExpr {
     pub fn symbol(x: &str) -> SExpr {
@@ -159,21 +176,21 @@ impl SExpr {
     pub fn as_port(&self) -> SResult<&PortData> {
         match self {
             SExpr::Port(ref pd) => Ok(pd),
-            x => bail!(TypeMismatch => "port", x.clone())
+            x => bail!(TypeMismatch => "port", x)
         }
     }
 
     pub fn as_port_mut(&mut self) -> SResult<&mut PortData> {
         match self {
             SExpr::Port(ref mut pd) => Ok(pd),
-            x => bail!(TypeMismatch => "port", x.clone())
+            x => bail!(TypeMismatch => "port", x)
         }
     }
 
     pub fn as_symbol(&self) -> SResult<String> {
         match self {
             SExpr::Atom(Token::Symbol(x)) => Ok(x.to_string()),
-            x => bail!(TypeMismatch => "string", x.clone())
+            x => bail!(TypeMismatch => "string", x)
         }
     }
 

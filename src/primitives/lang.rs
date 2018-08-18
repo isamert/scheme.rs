@@ -65,7 +65,7 @@ pub fn quasiquote(args: Args) -> SResult<SExpr> {
     } else if level > 1 {
         Ok(SExpr::quasiquote(vec![eval_unquoted(args)?]))
     } else {
-        bail!(Generic -> "Wrong usage of quasiquote")
+        bail!("Wrong usage of quasiquote")
     }
 }
 
@@ -76,7 +76,7 @@ pub fn unquote(args: Args) -> SResult<SExpr> {
 
     let level = match args.extra {
         Extra::QQLevel(x) => x - 1,
-        _ => bail!(Generic -> "Usage of unquote outside of quasiquote")
+        _ => bail!("Usage of unquote outside of quasiquote")
     };
 
     let env = args.env();
@@ -88,7 +88,7 @@ pub fn unquote(args: Args) -> SResult<SExpr> {
         let args = Args::new_with_extra(vec![arg], Extra::QQLevel(level), &env);
         Ok(SExpr::unquote(eval_unquoted(args)?))
     } else {
-        bail!(Generic -> "Wrong usage of unquote")
+        bail!("Wrong usage of unquote")
     }
 }
 
@@ -98,7 +98,7 @@ pub fn eval_unquoted(args: Args) -> SResult<SExpr> {
 
     let level = match args.extra {
         Extra::QQLevel(x) => x,
-        _ => panic!("Not inside a `quasiquote`")
+        _ => bail!("`unquote` not inside a `quasiquote`")
     };
 
     match arg {
@@ -169,7 +169,7 @@ fn env_add(t: EnvAddType, args: Args) -> SResult<SExpr> {
 
             (id.into_symbol()?, ProcedureData::new_compound(arg_list, body, &env)?)
         },
-        _ => panic!("Expected an identifier, not an expr.")
+        x => return Err(SErr::new_id_not_found(&x.to_string()))
     };
 
 
@@ -187,26 +187,21 @@ fn env_add(t: EnvAddType, args: Args) -> SResult<SExpr> {
 pub fn let_generic<F>(args: Args, mut eval_expr: F) -> SResult<SExpr>
 where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SResult<SExpr>) {
     let parent_env = args.env();
-    let (bindings, body) = args.into_split()
-        .expect("Expected a list of bindings and body, found something else.");
+    let (bindings, body) = args.into_split()?;
 
     let env = Env::new(parent_env.clone())
         .into_ref();
-    let bindings_list = bindings.into_list()
-        .expect("Expected a list of bindings, found something else.");
+    let bindings_list = bindings.into_list()?;
 
     for x in bindings_list {
-        let bind = x.into_list()
-            .expect("Expected a id-expr pair, found something else.");
-
+        let bind = x.into_list()?;
         let id = bind.get(0)
-            .expect("Expected an identifier, found nothing")
+            .ok_or_else(|| SErr::new_expr_not_found("nothing"))?
             .clone()
-            .into_symbol()
-            .expect("Identifier must be a symbol.");
+            .into_symbol()?;
 
         let expr = bind.get(1)
-            .expect("Expected an expression, found nothing");
+            .ok_or_else(|| SErr::new_expr_not_found("nothing"))?;
 
         env.define(id, eval_expr(expr, &env, &parent_env)?);
     }
@@ -216,6 +211,5 @@ where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SResult<SExpr
         result = Some(expr.eval(&env));
     }
 
-    result
-        .expect("Let body is empty")
+    result.unwrap()
 }

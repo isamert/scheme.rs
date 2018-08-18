@@ -124,7 +124,7 @@ impl Env {
         } else if self.parent.is_some() {
             self.parent.get(name)
         } else {
-            bail!(UnboundVar -> name)
+            bail!(UnboundVar => name)
         }
     }
 
@@ -140,7 +140,7 @@ impl Env {
                 .ok_or_else(|| SErr::new_unbound_var(name))?
                 .with_ref(name, f)
         } else {
-            bail!(UnboundVar -> name)
+            bail!(UnboundVar => name)
         }
     }
 
@@ -156,7 +156,7 @@ impl Env {
                 .ok_or_else(|| SErr::new_unbound_var(name))?
                 .with_mut_ref(name, f)
         } else {
-            bail!(UnboundVar -> name)
+            bail!(UnboundVar => name)
         }
     }
 
@@ -182,7 +182,7 @@ impl Env {
         } else if self.parent.is_some() {
             self.parent.remove(key)
         } else {
-            bail!(UnboundVar -> key)
+            bail!(UnboundVar => key)
         }
     }
 

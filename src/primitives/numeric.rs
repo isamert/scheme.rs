@@ -4,14 +4,16 @@ use lexer::Token;
 use parser::SExpr;
 use evaluator::Args;
 use util;
+use serr::{SErr, SResult};
 
-pub fn calc(op_str: char, args: Args) -> SExpr {
-    let mut args_iter = args.eval()
+pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
+    let mut args_iter = args.eval()?
         .into_iter();
+
     let init = match op_str {
         '+' | '-' if args.len() == 1 => SExpr::integer(0),
         '*' | '/' if args.len() == 1 => SExpr::integer(1),
-        _ => args_iter.next().expect("Expected an argument, found none")
+        _ => args_iter.next().ok_or_else(|| SErr::WrongArgCount(1,0))?
     };
 
 
@@ -23,42 +25,46 @@ pub fn calc(op_str: char, args: Args) -> SExpr {
         '-' => (Sub::sub, Sub::sub, Sub::sub),
         '*' => (Mul::mul, Mul::mul, Mul::mul),
         '/' => (Div::div, Div::div, Div::div),
-        _   => panic!("Not an arithmetic op: {}", op_str)
+        _   => bail!("Not an arithmetic op: {}", op_str)
     };
 
     use lexer::Token::*;
     use parser::SExpr::*;
     // Here we go, couldn't come up with something better
-    let result = args_iter.fold(init, |acc, x| match (acc, x) {
-        (Atom(Integer(a)), Atom(Integer(b))) => {
-            // Like it isnt ugly already
-            if op_str == '/' && a % b != 0 { 
-                Atom(Fraction(util::Fraction::new(a,b)))
-            } else {
-                Atom(Integer(opi(a,b)))
-            }
-        },
-        (Atom(Integer(a)), Atom(Float(b))) =>
-            Atom(Float(opfl(a as f64, b))),
-        (Atom(Float(a)), Atom(Integer(b))) =>
-            Atom(Float(opfl(a,b as f64))),
-        (Atom(Float(a)), Atom(Float(b))) =>
-            Atom(Float(opfl(a,b))),
-        (Atom(Fraction(a)), Atom(Fraction(b))) =>
-            Atom(Fraction(opfr(a,b))),
-        (Atom(Fraction(a)), Atom(Integer(b))) =>
-            Atom(Fraction(opfr(a,From::from(b)))),
-        (Atom(Integer(a)), Atom(Fraction(b))) =>
-            Atom(Fraction(opfr(From::from(a), b))),
-        (Atom(Fraction(a)), Atom(Float(b))) =>
-            Atom(Float(opfl(a.into(),b))),
-        (Atom(Float(a)), Atom(Fraction(b))) =>
-            Atom(Float(opfl(a,b.into()))),
-        (a,b) => panic!("At least one of these is not a number: {}, {}", a, b)
-    });
+    let result = args_iter.fold(Ok(init), |acc, x|{
+        let result = match (acc?, x) {
+            (Atom(Integer(a)), Atom(Integer(b))) => {
+                // Like it isnt ugly already
+                if op_str == '/' && a % b != 0 {
+                    Atom(Fraction(util::Fraction::new(a,b)))
+                } else {
+                    Atom(Integer(opi(a,b)))
+                }
+            },
+            (Atom(Integer(a)), Atom(Float(b))) =>
+                Atom(Float(opfl(a as f64, b))),
+            (Atom(Float(a)), Atom(Integer(b))) =>
+                Atom(Float(opfl(a,b as f64))),
+            (Atom(Float(a)), Atom(Float(b))) =>
+                Atom(Float(opfl(a,b))),
+            (Atom(Fraction(a)), Atom(Fraction(b))) =>
+                Atom(Fraction(opfr(a,b))),
+            (Atom(Fraction(a)), Atom(Integer(b))) =>
+                Atom(Fraction(opfr(a,From::from(b)))),
+            (Atom(Integer(a)), Atom(Fraction(b))) =>
+                Atom(Fraction(opfr(From::from(a), b))),
+            (Atom(Fraction(a)), Atom(Float(b))) =>
+                Atom(Float(opfl(a.into(),b))),
+            (Atom(Float(a)), Atom(Fraction(b))) =>
+                Atom(Float(opfl(a,b.into()))),
+            (a,b) => bail!(TypeMismatch => "number", SExpr::List(vec![a, b]))
+        };
+
+        Ok(result)
+    })?;
 
     // If it's an whole fraction, return it as int
-    if let Atom(Fraction(f)) = result {
+    let fixed_result = if let Atom(Fraction(f)) = result {
         if f.is_int() {
             Atom(Integer(f.n))
         } else {
@@ -66,23 +72,26 @@ pub fn calc(op_str: char, args: Args) -> SExpr {
         }
     } else {
         result
-    }
+    };
+
+    Ok(fixed_result)
 }
 
-pub fn exact(args: Args) -> SExpr {
-    let result = args.eval()
-        .iter()
-        .all(|x| match x {
-            SExpr::Atom(Token::Integer(_)) | 
-                SExpr::Atom(Token::Fraction(_)) => true,
-            SExpr::Atom(Token::Float(_)) => false,
-            _ => panic!("Wrong type of argument while using exact?")
-        });
+pub fn exact(args: Args) -> SResult<SExpr> {
+    let result = args.eval()?
+        .get(0)
+        .ok_or_else(|| SErr::WrongArgCount(1, 0))
+        .map(|x| match x {
+            SExpr::Atom(Token::Integer(_)) |
+                SExpr::Atom(Token::Fraction(_)) => Ok(true),
+            SExpr::Atom(Token::Float(_)) => Ok(false),
+            x => bail!(TypeMismatch => "number", x)
+        })?;
 
-    SExpr::boolean(result)
+    Ok(SExpr::boolean(result?))
 }
 
 
-pub fn inexact(args: Args) -> SExpr {
-    !exact(args)
+pub fn inexact(args: Args) -> SResult<SExpr> {
+    Ok((!(exact(args)?))?)
 }

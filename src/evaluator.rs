@@ -87,7 +87,7 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SResult<SExpr> {
         },
         SExpr::List(xs) => {
             let op = xs.get(0)
-                .ok_or_else(|| SErr::new_unexpected_form("()"))?;
+                .ok_or_else(|| SErr::new_unexpected_form(sexpr))?;
 
             match op {
                 SExpr::Atom(Token::Symbol(symbol)) => {
@@ -103,7 +103,7 @@ pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SResult<SExpr> {
                         let args = xs[1..].to_args(&env);
                         x.apply(args)
                     } else {
-                        bail!(NotAProcedure => x.clone())
+                        bail!(NotAProcedure => x)
                     }
                 }
             }
@@ -195,38 +195,29 @@ impl Args {
         Ok(Args::new_with_extra(self.eval()?, self.extra, &self.env))
     }
 
-    pub fn map<F>(mut self, mut f: F) -> Args
-    where F: FnMut(SExpr) -> SExpr {
-        self.vec = self.vec.into_iter()
-            .map(f)
-            .collect::<SExprs>();
-
-        self
-    }
-
     pub fn len(&self) -> usize {
         self.vec.len()
     }
 
-    pub fn own_one(self) -> Option<(SExpr, SExprs)> {
+    pub fn own_one(self) -> SResult<(SExpr, SExprs)> {
         let mut iter = self.vec.into_iter();
-        let x1 = iter.next()?;
-        Some((x1, iter.collect()))
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(1, 0))?;
+        Ok((x1, iter.collect()))
     }
 
-    pub fn own_two(self) -> Option<(SExpr, SExpr, SExprs)> {
+    pub fn own_two(self) -> SResult<(SExpr, SExpr, SExprs)> {
         let mut iter = self.vec.into_iter();
-        let x1 = iter.next()?;
-        let x2 = iter.next()?;
-        Some((x1, x2, iter.collect()))
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(1, 0))?;
+        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(2, 1))?;
+        Ok((x1, x2, iter.collect()))
     }
 
-    pub fn own_three(self) -> Option<(SExpr, SExpr, SExpr, SExprs)> {
+    pub fn own_three(self) -> SResult<(SExpr, SExpr, SExpr, SExprs)> {
         let mut iter = self.vec.into_iter();
-        let x1 = iter.next()?;
-        let x2 = iter.next()?;
-        let x3 = iter.next()?;
-        Some((x1, x2, x3, iter.collect()))
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(3, 0))?;
+        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(3, 1))?;
+        let x3 = iter.next().ok_or_else(|| SErr::WrongArgCount(3, 2))?;
+        Ok((x1, x2, x3, iter.collect()))
     }
 }
 

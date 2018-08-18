@@ -107,7 +107,7 @@ impl PortData {
             PortData::TextualFileInput(_, br) => port_read_str_fn!(br, read_line),
             PortData::StdInput(br) => port_read_str_fn!(br, read_line),
             // FIXME: fix this and the functions below
-            x => bail!(WrongPort => "read-line".to_string(), "TODO:PORT_NAME_HERE")
+            _x => bail!(WrongPort => "read-line", "TODO:PORT_NAME_HERE")
         }
     }
 
@@ -116,7 +116,7 @@ impl PortData {
         match self {
             PortData::TextualFileInput(_, br) => port_read_chr!(br),
             PortData::StdInput(br) => port_read_chr!(br),
-            x => bail!(WrongPort => "read-char".to_string(), "TODO:PORT_NAME_HERE")
+            _x => bail!(WrongPort => "read-char", "TODO:PORT_NAME_HERE")
         }
     }
 
@@ -124,7 +124,7 @@ impl PortData {
         match self {
             PortData::TextualFileInput(_, br) => port_read_str_fn!(br, read_to_string),
             PortData::StdInput(br) => port_read_str_fn!(br, read_to_string),
-            x => bail!(WrongPort => "read-all-str".to_string(), "TODO:PORT_NAME_HERE")
+            _x => bail!(WrongPort => "read-all-str", "TODO:PORT_NAME_HERE")
         }
     }
 
@@ -136,7 +136,7 @@ impl PortData {
 
                 Ok((1, u8s[0]))
             },
-            x => bail!(WrongPort => "read-u8".to_string(), "TODO:PORT_NAME_HERE")
+            _x => bail!(WrongPort => "read-u8", "TODO:PORT_NAME_HERE")
         }
     }
 
@@ -148,7 +148,7 @@ impl PortData {
 
                 Ok((size, u8s))
             },
-            x => bail!(WrongPort => "read-all-u8".to_string(), "TODO:PORT_NAME_HERE")
+            _x => bail!(WrongPort => "read-all-u8", "TODO:PORT_NAME_HERE")
         }
     }
 
@@ -165,7 +165,7 @@ impl PortData {
                 write!(br, "{}", string)?;
                 br.flush()?;
             },
-            x => bail!(WrongPort => "write-string".to_string(), "TODO:PORT_NAME_HERE")
+            _x => bail!(WrongPort => "write-string", "TODO:PORT_NAME_HERE")
         };
 
         Ok(())

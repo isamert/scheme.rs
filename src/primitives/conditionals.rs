@@ -2,32 +2,33 @@ use parser::SExpr;
 use parser::SExprs;
 use evaluator::Args;
 use evaluator::ToArgs;
+use serr::{SErr, SResult};
 
 
-pub fn if_(args: Args) -> SExpr {
+pub fn if_(args: Args) -> SResult<SExpr> {
     let test = args.get(0)
-        .expect("Expected a boolean or expression, found nothing");
+        .ok_or_else(|| SErr::WrongArgCount(2, 0))?;
     let consequent = args.get(1)
-        .expect("Expected an expression, found nothing.");
+        .ok_or_else(|| SErr::WrongArgCount(2, 1))?;
     let alterne = args.get(2)
         .unwrap_or(&SExpr::Unspecified);
 
     let env = &args.env;
-    if test.eval(&env).to_bool() {
+    if test.eval(&env)?.to_bool() {
         consequent.eval(&env)
     } else {
         alterne.eval(&env)
     }
 }
 
-pub fn cond(args: Args) -> SExpr {
+pub fn cond(args: Args) -> SResult<SExpr> {
     let clauses = args.all()
         .iter()
         .map(|x| {
             if let SExpr::List(clause) = x {
                 let mut current = 0;
                 let test = clause.get(current)
-                    .expect("Expected a <test>.");
+                    .ok_or_else(|| SErr::new_unexpected_form(x))?;
 
                 current += 1;
                 if clause.len() == 3 {
@@ -37,19 +38,21 @@ pub fn cond(args: Args) -> SExpr {
                 }
 
                 let expr = clause.get(current)
-                    .expect("Expected an expression.");
+                    .ok_or_else(|| SErr::new_unexpected_form(x))?;
 
-                (test, expr)
+                Ok((test, expr))
             } else {
-                panic!("Bad case form.")
+                bail!(TypeMismatch => "list of clauses", x)
             }
-        });
+        })
+        .collect::<SResult<Vec<_>>>()?;
 
     let mut else_clause: Option<SExpr> = None;
     for (test, expr) in clauses {
         if test.is_symbol("else") {
+            if else_clause.is_some() { bail!(UnexpectedForm => test) }
             else_clause = Some(expr.clone());
-        } else if test.eval(&args.env).to_bool() {
+        } else if test.eval(&args.env)?.to_bool() {
             return expr.eval(&args.env)
         }
     }
@@ -58,45 +61,42 @@ pub fn cond(args: Args) -> SExpr {
         else_clause.unwrap()
             .eval(&args.env)
     } else {
-        SExpr::Unspecified
+        Ok(SExpr::Unspecified)
     }
 }
 
-pub fn case(args: Args) -> SExpr {
+pub fn case(args: Args) -> SResult<SExpr> {
     let test = args.get(0)
-        .expect("Expected an argument, found nothing.");
+        .ok_or_else(|| SErr::WrongArgCount(1,0))?;
+
     let args_vec: SExprs = args.all()
         .iter()
         .skip(1)
         .map(|clause| {
             if let SExpr::List(xs) = clause {
                 let test = SExpr::List(vec![SExpr::symbol("eqv?"), xs[0].clone(), test.clone()]);
-                SExpr::List(vec![test, xs[1].clone()])
+                Ok(SExpr::List(vec![test, xs[1].clone()]))
             } else {
-                panic!("Clause is not in desired form.");
+                bail!(UnexpectedForm => clause)
             }
         })
-        .collect();
+        .collect::<SResult<_>>()?;
 
     cond(args_vec.to_args(&args.env))
 }
 
-pub fn or(args: Args) -> SExpr {
-    let env = args.env();
-    let result = args
-        .into_all()
-        .into_iter()
-        .any(|x| x.eval(&env).to_bool());
+pub fn or(args: Args) -> SResult<SExpr> {
+    let result = args.eval()?
+        .iter()
+        .any(|x| x.to_bool());
 
-    SExpr::boolean(result)
+    Ok(SExpr::boolean(result))
 }
 
-pub fn and(args: Args) -> SExpr {
-    let env = args.env();
-    let result = args
-        .into_all()
-        .into_iter()
-        .all(|x| x.eval(&env).to_bool());
+pub fn and(args: Args) -> SResult<SExpr> {
+    let result = args.eval()?
+        .iter()
+        .all(|x| x.to_bool());
 
-    SExpr::boolean(result)
+    Ok(SExpr::boolean(result))
 }

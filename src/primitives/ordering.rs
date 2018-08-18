@@ -2,30 +2,31 @@ use std::cmp::PartialOrd as po;
 use std::cmp::PartialEq as pe;
 use parser::SExpr;
 use evaluator::Args;
+use serr::SResult;
 
-pub fn lt(args: Args) -> SExpr {
+pub fn lt(args: Args) -> SResult<SExpr> {
     compare(args, po::lt)
 }
 
-pub fn gt(args: Args) -> SExpr {
+pub fn gt(args: Args) -> SResult<SExpr> {
     compare(args, po::gt)
 }
 
-pub fn lte(args: Args) -> SExpr {
+pub fn lte(args: Args) -> SResult<SExpr> {
     compare(args, po::le)
 }
 
-pub fn gte(args: Args) -> SExpr {
+pub fn gte(args: Args) -> SResult<SExpr> {
     compare(args, po::ge)
 }
 
-pub fn eq(args: Args) -> SExpr {
+pub fn eq(args: Args) -> SResult<SExpr> {
     compare(args, pe::eq)
 }
 
-fn compare<F>(args: Args, op: F) -> SExpr
+fn compare<F>(args: Args, op: F) -> SResult<SExpr>
 where F: Fn(&SExpr,&SExpr) -> bool {
-    SExpr::boolean(check(args.eval().as_slice(), op))
+    Ok(SExpr::boolean(check(args.eval()?.as_slice(), op)))
 }
 
 fn check<I,F>(xs: &[I], op: F) -> bool

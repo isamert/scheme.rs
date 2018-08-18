@@ -1,52 +1,53 @@
 use lexer::Token;
 use parser::SExpr;
 use evaluator::Args;
+use serr::SResult;
 
-pub fn eq(args: Args) -> SExpr {
+pub fn eq(args: Args) -> SResult<SExpr> {
     eqv(args)
 }
 
-pub fn eqv(args: Args) -> SExpr {
+pub fn eqv(args: Args) -> SResult<SExpr> {
     equality(args, |args| {
-        let evaled = args.eval();
-        match (&evaled[0], &evaled[1]) {
+        let evaled = args.eval()?;
+        let result = match (&evaled[0], &evaled[1]) {
             (SExpr::Atom(x), SExpr::Atom(y)) => x == y,
             (SExpr::List(x), SExpr::List(y)) => x.is_empty() && y.is_empty(),
             (SExpr::Vector(x), SExpr::Vector(y)) => x.is_empty() && y.is_empty(),
             (_,_) => false
-        }
+        };
+
+        Ok(result)
     })
 }
 
-pub fn equal(args: Args) -> SExpr {
+pub fn equal(args: Args) -> SResult<SExpr> {
     equality(args, |args| {
-        let evaled = args.eval();
+        let evaled = args.eval()?;
         let obj1 = &evaled[0];
         let obj2 = &evaled[1];
 
-        obj1 == obj2
+        Ok(obj1 == obj2)
     })
 }
 
-fn equality<F>(args: Args, mut non_atom: F) -> SExpr
-where F: (FnMut(&Args) -> bool) {
+fn equality<F>(args: Args, mut non_atom: F) -> SResult<SExpr>
+where F: (FnMut(&Args) -> SResult<bool>) {
     if args.len() < 2 {
-        return SExpr::boolean(true);
+        return Ok(SExpr::boolean(true));
     }
 
     let result = match (&args[0], &args[1]) {
-        (SExpr::Atom(Token::Symbol(x)), SExpr::Atom(Token::Symbol(y))) => x == y,
-        (x@SExpr::Atom(Token::Symbol(_)), y@SExpr::Atom(_)) => {
-            x.eval_ref(&args.env, |x| x == y)
-        },
-        (x@SExpr::Atom(_), y@SExpr::Atom(Token::Symbol(_))) => {
-            y.eval_ref(&args.env, |y| x == y)
+        (x@SExpr::Atom(Token::Symbol(_)), y@SExpr::Atom(Token::Symbol(_))) => {
+            x.eval_ref(&args.env, |x| {
+                y.eval_ref(&args.env, |y| Ok(x == y))
+            })?
         },
         (SExpr::Atom(x), SExpr::Atom(y)) => x == y,
         _ => {
-            non_atom(&args)
+            non_atom(&args)?
         }
     };
 
-    SExpr::boolean(result)
+    Ok(SExpr::boolean(result))
 }

@@ -1,11 +1,11 @@
 pub mod lang;
-//pub mod lists;
-//pub mod numeric;
-//pub mod equivalence;
-//pub mod ordering;
-//pub mod conditionals;
-//pub mod io;
-//pub mod system;
+pub mod equivalence;
+pub mod numeric;
+pub mod ordering;
+pub mod conditionals;
+pub mod lists;
+pub mod io;
+pub mod system;
 
 use env::EnvValues;
 
@@ -19,8 +19,8 @@ pub fn env() -> EnvValues {
         "letrec"      => lang::let_rec,
         "quote"       => lang::quote,
         "quasiquote"  => lang::quasiquote,
-        "unquote"     => lang::unquote
-        /*
+        "unquote"     => lang::unquote,
+
         "eqv?"   => equivalence::eqv,
         "eq?"    => equivalence::eq,
         "equal?" => equivalence::equal,
@@ -49,6 +49,12 @@ pub fn env() -> EnvValues {
         "car"  => lists::car,
         "cdr"  => lists::cdr,
 
+        "load"         => system::load,
+        "file-exists?" => system::file_exists,
+        "delete-file"  => system::delete_file,
+        "get-environment-variable"  => system::get_environment_variable,
+        "get-environment-variables" => system::get_environment_variables,
+
         "open-binary-input-file"  => io::open_binary_input_file,
         "open-binary-output-file" => io::open_binary_output_file,
         "open-input-file"  => io::open_input_file,
@@ -65,13 +71,6 @@ pub fn env() -> EnvValues {
         "write-string"     => io::write_string,
         "display"          => io::display,
         "newline"          => io::newline,
-        "close-port"       => io::close_port,
-
-        "load"         => system::load,
-        "file-exists?" => system::file_exists,
-        "delete-file"  => system::delete_file,
-        "get-environment-variable"  => system::get_environment_variable,
-        "get-environment-variables" => system::get_environment_variables
-        */
+        "close-port"       => io::close_port
     }
 }
