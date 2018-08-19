@@ -2,7 +2,8 @@ use std::cmp::PartialOrd as po;
 use std::cmp::PartialEq as pe;
 use parser::SExpr;
 use evaluator::Args;
-use serr::SResult;
+use env::EnvRef;
+use serr::{SErr, SResult};
 
 pub fn lt(args: Args) -> SResult<SExpr> {
     compare(args, po::lt)
@@ -26,21 +27,22 @@ pub fn eq(args: Args) -> SResult<SExpr> {
 
 fn compare<F>(args: Args, op: F) -> SResult<SExpr>
 where F: Fn(&SExpr,&SExpr) -> bool {
-    Ok(SExpr::boolean(check(args.eval()?.as_slice(), op)))
+    Ok(SExpr::boolean(check(&args.all(), op, &args.env)?))
 }
 
-fn check<I,F>(xs: &[I], op: F) -> bool
-where I: PartialOrd,
-      F: Fn(&I,&I) -> bool {
+fn check<F>(xs: &[SExpr], op: F, env: &EnvRef) -> SResult<bool>
+where F: Fn(&SExpr,&SExpr) -> bool {
     match xs {
-        [] | [_] => true,
-        [x1, x2] => op(x1,x2),
+        [] | [_] => Ok(true),
         _ => {
-            let x1 = &xs[0];
-            let x2 = &xs[1];
+            let x1 = xs[0].eval(env)?;
+            let x2 = xs[1].eval(env)?;
             let rest = &xs[2..];
+            if !(x1.is_numeric() && x2.is_numeric()) {
+                bail!(TypeMismatch => "number", SExpr::List(vec![x1, x2]))
+            }
 
-            op(x1,x2) && check(rest, op)
+            Ok(op(&x1, &x2) && check(rest, op, env)?)
         }
     }
 }

@@ -132,9 +132,9 @@ impl From<i64> for Fraction {
     }
 }
 
-impl Into<f64> for Fraction {
-    fn into(self) -> f64 {
-        self.n as f64 / self.d as f64
+impl From<Fraction> for f64 {
+    fn from(f: Fraction) -> f64 {
+        f.n as f64 / f.d as f64
     }
 }
 

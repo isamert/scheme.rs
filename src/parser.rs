@@ -172,6 +172,14 @@ impl SExpr {
         }
     }
 
+    pub fn is_numeric(&self) -> bool {
+        match self {
+            SExpr::Atom(Token::Integer(_)) | SExpr::Atom(Token::Fraction(_))
+                | SExpr::Atom(Token::Float(_)) => true,
+            _ => false
+        }
+    }
+
     // Borrows
     pub fn as_port(&self) -> SResult<&PortData> {
         match self {

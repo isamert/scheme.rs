@@ -1,12 +1,13 @@
 use std::iter::Peekable;
 use std::str::Chars;
 use std::string::ParseError;
+use std::cmp::Ordering;
 
 use util::GentleIterator;
 use util::AndOr;
 use util::Fraction;
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     LParen,
     RParen,
@@ -22,6 +23,30 @@ pub enum Token {
     QuasiQuote,
     UnQuote,
     UnQuoteSplicing
+}
+
+impl PartialOrd for Token {
+    fn partial_cmp(&self, other: &Token) -> Option<Ordering> {
+        use self::Token::*;
+        match (self, other) {
+            (Integer(x), Integer(y)) => x.partial_cmp(y),
+            (Float(x), Float(y)) => x.partial_cmp(y),
+            (Fraction(x), Fraction(y)) => x.partial_cmp(y),
+            (Integer(x), Float(y)) => (*x as f64).partial_cmp(y),
+            (Float(x), Integer(y)) => x.partial_cmp(&(*y as f64)),
+            (Integer(x), Fraction(y)) => (*x as f64).partial_cmp(&(*y).into()),
+            (Fraction(x), Integer(y)) => f64::from(*x).partial_cmp(&(*y as f64)),
+            (Float(x), Fraction(y)) => x.partial_cmp(&(*y).into()),
+            (Fraction(x), Float(y)) => f64::from(*x).partial_cmp(y),
+
+            (Str(x), Str(y)) => x.partial_cmp(y),
+            (Chr(x), Chr(y)) => x.partial_cmp(y),
+            (Boolean(x), Boolean(y)) => x.partial_cmp(y),
+            (Symbol(x), Symbol(y)) => x.partial_cmp(y),
+
+            _ => None
+        }
+    }
 }
 
 
@@ -45,7 +70,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
     let iter = &mut input.chars().peekable();
 
     loop {
-        if parse_whitespace(iter) {
+        if parse_whitespace(iter) || parse_comment(iter) {
             continue
         }
 
@@ -77,6 +102,15 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 fn parse_whitespace(iter: &mut Peekable<Chars>) -> bool {
     if check_chr(iter, ' ') || check_chr(iter, '\n') {
         iter.next();
+        true
+    } else {
+        false
+    }
+}
+
+fn parse_comment(iter: &mut Peekable<Chars>) -> bool {
+    if check_chr(iter, ';') {
+        iter.take_until(|c| *c != '\n');
         true
     } else {
         false

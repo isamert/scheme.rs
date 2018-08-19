@@ -43,7 +43,10 @@ pub fn load(args: Args) -> SResult<SExpr> {
     let scm = read_to_string(get_path_from_args(args)?)?;
 
     for sexpr in parse(tokenize(&scm))? {
-        sexpr.eval(&env)?;
+        let result = sexpr.eval(&env)?;
+        if !result.is_unspecified() {
+            println!("{}", result);
+        }
     }
 
     Ok(SExpr::Unspecified)
