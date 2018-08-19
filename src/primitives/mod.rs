@@ -52,6 +52,7 @@ pub fn env() -> EnvValues {
         "load"         => system::load,
         "file-exists?" => system::file_exists,
         "delete-file"  => system::delete_file,
+        "system*"      => system::system__,
         "get-environment-variable"  => system::get_environment_variable,
         "get-environment-variables" => system::get_environment_variables,
 

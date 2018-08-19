@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::fs::{remove_file, read_to_string};
 use std::env;
+use std::process::Command;
 
 use lexer::tokenize;
 use parser::{parse, SExpr};
@@ -46,4 +47,21 @@ pub fn load(args: Args) -> SResult<SExpr> {
     }
 
     Ok(SExpr::Unspecified)
+}
+
+// system*
+pub fn system__(args: Args) -> SResult<SExpr> {
+    let (cmd_expr, arg_expr) = args.evaled()?.own_one()?;
+    let cmd = cmd_expr.into_str()?;
+    let argus = arg_expr.into_iter()
+        .map(|x| x.into_str())
+        .collect::<SResult<Vec<_>>>()?;
+
+    let status = Command::new(cmd)
+        .args(argus)
+        .status()?
+        .code()
+        .unwrap_or(1);
+
+    Ok(SExpr::integer(status as i64))
 }
