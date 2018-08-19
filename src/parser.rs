@@ -60,7 +60,7 @@ impl Not for SExpr {
     }
 }
 
-/// One can call .into() into everything and it yields itself, or it yields
+/// One can call .into() on everything and it yields itself, or it yields
 /// the target type if it implements the required From/Into trait.
 /// .into is particularly useful in macros. With that implementation in hand,
 /// I can send a &SExpr to a macro which calls .into() on everything and get
