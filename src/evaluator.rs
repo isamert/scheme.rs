@@ -5,6 +5,7 @@ use parser::SExpr;
 use parser::SExprs;
 use env::EnvRef;
 use env::EnvRefT;
+use procedure::{ProcedureData, PrimitiveData, CompoundData};
 use serr::{SErr, SResult};
 
 pub fn eval_mut_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> SResult<T>
@@ -37,94 +38,115 @@ where F: FnMut(&SExpr)->SResult<T> {
     }
 }
 
-pub fn eval(sexpr: &SExpr, env: &EnvRef) -> SResult<SExpr> {
-    match sexpr {
-        SExpr::Atom(Token::Symbol(ref x)) => {
-            let result = env.get(x)?;
+pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
+    let mut sexpr = sexpr_.clone();
+    let mut env = env_.clone_ref();
+    loop {
+        match sexpr {
+            SExpr::Atom(Token::Symbol(x)) => {
+                let result = env.get(&x)?;
 
-            match result {
-                SExpr::Lazy(_) => result.eval(env),
-                _ => Ok(result)
-            }
-        },
-        SExpr::Atom(x) => {
-            Ok(SExpr::Atom(x.clone()))
-        },
-        SExpr::Procedure(x) => {
-            Ok(SExpr::Procedure(x.clone()))
-        },
-        SExpr::Unspecified => {
-            Ok(SExpr::Unspecified)
-        },
-        SExpr::Lazy(expr) => {
-            expr.eval(&env)
-        },
-        SExpr::Vector(vec) => {
-            Ok(SExpr::Vector(vec.clone()))
-        },
-        SExpr::Port(port) => {
-            Ok(SExpr::Port(port.clone()))
-        },
-        list@SExpr::DottedList(_,_) => {
-            fn flatten(list: &SExpr) -> SExprs {
-                match list {
-                    SExpr::DottedList(xs, sexpr) => {
-                        let mut ys = xs.clone();
-                        match &**sexpr {
-                            SExpr::List(xs) => ys.append(&mut xs.clone()),
-                            dl@SExpr::DottedList(_,_) => ys.append(&mut flatten(&dl)),
-                            x => ys.push(x.clone())
-                        };
-                        ys
-                    },
-                    SExpr::List(xs) => {
-                        xs.clone()
-                    },
-                    x => vec![x.clone()]
+                match result {
+                    SExpr::Lazy(_) => sexpr = result,
+                    _ => return Ok(result)
+                };
+            },
+            x@SExpr::Atom(_) | x@SExpr::Procedure(_) | x@SExpr::Vector(_)
+                | x@SExpr::Port(_) | x@SExpr::Unspecified => {
+                return Ok(x)
+            },
+            SExpr::Lazy(expr) => {
+                sexpr = *expr;
+            },
+            list@SExpr::DottedList(_,_) => {
+                fn flatten(list: SExpr) -> SExprs {
+                    match list {
+                        SExpr::DottedList(xs, sexpr) => {
+                            let mut ys = xs;
+                            match *sexpr {
+                                SExpr::List(mut xs) => ys.append(&mut xs),
+                                dl@SExpr::DottedList(_,_) => ys.append(&mut flatten(dl)),
+                                x => ys.push(x)
+                            };
+                            ys
+                        },
+                        SExpr::List(xs) => xs,
+                        x => vec![x]
+                    }
                 }
-            }
-            SExpr::List(flatten(&list)).eval(env)
-        },
-        SExpr::List(xs) => {
-            let op = xs.get(0)
-                .ok_or_else(|| SErr::new_unexpected_form(sexpr))?;
 
-            match op {
-                SExpr::Atom(Token::Symbol(symbol)) => {
-                    // Skip the op name
-                    let args = xs[1..].to_args(&env);
-                    call_procedure(symbol, args)
-                },
-                x => {
-                    // Trying to use something other than a symbol as procedure
-                    // Evaluate and see if it's a procedure.
-                    let evaled = eval(x, env)?;
-                    if let SExpr::Procedure(x) = evaled {
-                        let args = xs[1..].to_args(&env);
-                        x.apply(args)
-                    } else {
-                        bail!(NotAProcedure => x)
+                sexpr = SExpr::List(flatten(list));
+            },
+            SExpr::List(xs) => {
+                let mut iter = xs.into_iter();
+                let op = iter.next()
+                    .ok_or_else(|| SErr::new_unexpected_form(&SExpr::List(vec![])))?;
+                let args = Args::new(iter.collect(), &env);
+
+                match op {
+                    // Need to handle control structres like if and begin
+                    // here to be able to use same stack for tail recursive
+                    // functions.
+                    // Other control structres should be written in forms of
+                    // if or begin (and I hope that's all for basic TCO)
+                    SExpr::Atom(Token::Symbol(ref sym)) if sym == "if" => {
+                        let mut arg_iter = args.into_all().into_iter();
+                        let test = arg_iter.next()
+                            .ok_or_else(|| SErr::WrongArgCount(2, 0))?;
+                        let consequent = arg_iter.next()
+                            .ok_or_else(|| SErr::WrongArgCount(2, 1))?;
+                        let alterne = arg_iter.next()
+                            .unwrap_or(SExpr::Unspecified);
+
+                        if test.eval(&env)?.to_bool() {
+                            sexpr = consequent;
+                        } else {
+                            sexpr = alterne;
+                        }
+                    },
+                    SExpr::Atom(Token::Symbol(ref sym)) if sym == "begin" => {
+                        sexpr = args.eval()?
+                            .into_iter()
+                            .last()
+                            .unwrap_or_else(|| SExpr::Unspecified);
+                    },
+                    SExpr::Atom(Token::Symbol(symbol)) => {
+                        let procedure = args.env
+                            .get(&symbol)?
+                            .clone();
+
+                        match procedure {
+                            SExpr::Procedure(proc) => match proc {
+                                ProcedureData::Primitive(x) => return x.apply(args),
+                                ProcedureData::Compound(x) => {
+                                    env = x.build_env(args)?;
+                                    sexpr = *x.body;
+                                }
+                            },
+                            // FIXME: SExpr::Lazy(p) => call(p.eval(&args.env)?, args),
+                            _ => bail!(NotAProcedure => procedure)
+                        };
+                    },
+                    x => {
+                        // Trying to use something other than a symbol as procedure
+                        // Evaluate and see if it's a procedure.
+                        let evaled = eval(&x, &env)?;
+                        if let SExpr::Procedure(procedure) = evaled {
+                            match procedure {
+                                ProcedureData::Primitive(x) => return x.apply(args),
+                                ProcedureData::Compound(x) => {
+                                    env = x.build_env(args)?;
+                                    sexpr = *x.body;
+                                }
+                            };
+                        } else {
+                            bail!(NotAProcedure => x)
+                        }
                     }
                 }
             }
-        }
-    }
-}
-
-pub fn call_procedure(op: &str, args: Args) -> SResult<SExpr> {
-    let procedure = args.env
-        .get(op)?
-        .clone();
-
-    fn call(proc_expr: SExpr, args: Args) -> SResult<SExpr> {
-        match proc_expr {
-            SExpr::Procedure(proc) => proc.apply(args),
-            SExpr::Lazy(p) => call(p.eval(&args.env)?, args),
-            _ => bail!(NotAProcedure => proc_expr)
-        }
-    }
-
-    call(procedure, args)
+        };
+    };
 }
 
 #[derive(Debug)]

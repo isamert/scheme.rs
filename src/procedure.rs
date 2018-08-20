@@ -24,7 +24,7 @@ pub struct PrimitiveData {
 #[derive(Debug, Clone, PartialEq)]
 pub struct CompoundData {
     params: Param,
-    body: SExprs,
+    pub body: Box<SExpr>,
     env: EnvRef
 }
 
@@ -38,7 +38,7 @@ pub enum Param {
 impl ProcedureData {
     /// Creates user defined procedure,
     /// a `SExpr::Procedure(ProcedureData::Compound)`.
-    pub fn new_compound(params_expr: SExpr, body: SExprs, env: &EnvRef) -> SResult<SExpr> {
+    pub fn new_compound(params_expr: SExpr, mut body: SExprs, env: &EnvRef) -> SResult<SExpr> {
         let params = match params_expr {
             SExpr::Atom(Token::Symbol(x)) => {
                 Param::Single(x)
@@ -62,9 +62,20 @@ impl ProcedureData {
             x => bail!(TypeMismatch => "parameter list", x)
         };
 
+
+        // Wrap body in begin: (begin body)
+        let body_expr = if body.len() == 1 {
+            body.into_iter().next().unwrap()
+        } else {
+            let mut body_vec = vec![SExpr::symbol("begin")];
+            body_vec.append(&mut body);
+            SExpr::List(body_vec)
+        };
+
+
         let proc = SExpr::Procedure(ProcedureData::Compound(CompoundData {
             params,
-            body,
+            body: Box::new(body_expr),
             env: env.clone_ref()
         }));
 
@@ -76,17 +87,10 @@ impl ProcedureData {
     pub fn new_primitive(fun: PrimitiveProcedure) -> SExpr {
         SExpr::Procedure(ProcedureData::Primitive(PrimitiveData { fun }))
     }
-
-    pub fn apply(&self, args: Args) -> SResult<SExpr> {
-        match self {
-            ProcedureData::Compound(x)  => x.apply(args),
-            ProcedureData::Primitive(x) => x.apply(args)
-        }
-    }
 }
 
 impl CompoundData {
-    pub fn apply(&self, args: Args) -> SResult<SExpr> {
+    pub fn build_env(&self, args: Args) -> SResult<EnvRef> {
         let mut inner_env = Env::new(self.env.clone_ref());
         match self.params {
             Param::Single(ref x) => {
@@ -111,16 +115,9 @@ impl CompoundData {
                 let rest = evaled_args.take_while(|_| true).collect::<SExprs>();
                 inner_env.define(y.clone(), SExpr::List(rest));
             }
-        }
+        };
 
-
-        let mut last_expr = None;
-        let env_ref = inner_env.into_ref();
-        for (_i, expr) in self.body.iter().enumerate() {
-            last_expr = Some(expr.eval(&env_ref)?);
-        }
-
-        Ok(last_expr.unwrap())
+        Ok(inner_env.into_ref())
     }
 }
 
