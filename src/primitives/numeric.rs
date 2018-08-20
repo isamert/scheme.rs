@@ -77,7 +77,7 @@ pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
     Ok(fixed_result)
 }
 
-pub fn exact(args: Args) -> SResult<SExpr> {
+pub fn exact_qm(args: Args) -> SResult<SExpr> {
     let result = args.eval()?
         .get(0)
         .ok_or_else(|| SErr::WrongArgCount(1, 0))
@@ -92,6 +92,12 @@ pub fn exact(args: Args) -> SResult<SExpr> {
 }
 
 
-pub fn inexact(args: Args) -> SResult<SExpr> {
-    Ok((!(exact(args)?))?)
+pub fn inexact_qm(args: Args) -> SResult<SExpr> {
+    Ok((!(exact_qm(args)?))?)
+}
+
+pub fn remainder(args: Args) -> SResult<SExpr> {
+    let (x, y) = args.evaled()?.own_two()?;
+
+    Ok(SExpr::integer(x.as_int()? % y.as_int()?))
 }

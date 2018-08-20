@@ -199,25 +199,47 @@ impl Args {
         self.vec.len()
     }
 
-    pub fn own_one(self) -> SResult<(SExpr, SExprs)> {
+    pub fn own_one(self) -> SResult<SExpr> {
+        let max = 1;
+        if self.len() > max {
+            bail!(WrongArgCount => max, self.len())
+        }
+
         let mut iter = self.vec.into_iter();
-        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(1, 0))?;
-        Ok((x1, iter.collect()))
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 0))?;
+        Ok(x1)
     }
 
-    pub fn own_two(self) -> SResult<(SExpr, SExpr, SExprs)> {
+    pub fn own_two(self) -> SResult<(SExpr, SExpr)> {
+        let max = 2;
+        if self.len() > max {
+            bail!(WrongArgCount => max, self.len())
+        }
+
         let mut iter = self.vec.into_iter();
-        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(1, 0))?;
-        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(2, 1))?;
-        Ok((x1, x2, iter.collect()))
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 0))?;
+        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 1))?;
+        Ok((x1,x2))
     }
 
-    pub fn own_three(self) -> SResult<(SExpr, SExpr, SExpr, SExprs)> {
+    pub fn own_three(self) -> SResult<(SExpr, SExpr, SExpr)> {
+        let max = 3;
+        if self.len() > max {
+            bail!(WrongArgCount => max, self.len())
+        }
+
         let mut iter = self.vec.into_iter();
-        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(3, 0))?;
-        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(3, 1))?;
-        let x3 = iter.next().ok_or_else(|| SErr::WrongArgCount(3, 2))?;
-        Ok((x1, x2, x3, iter.collect()))
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 0))?;
+        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 1))?;
+        let x3 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 2))?;
+        Ok((x1,x2,x3))
+    }
+
+    pub fn own_one_rest(self) -> SResult<(SExpr, SExprs)> {
+        let mut iter = self.vec.into_iter();
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(1, 0))?;
+        let rest = iter.collect();
+        Ok((x1, rest))
     }
 }
 

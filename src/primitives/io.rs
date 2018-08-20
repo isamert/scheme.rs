@@ -82,19 +82,19 @@ macro_rules! call_write_fn(
 //
 // Functions
 //
-pub fn input_port__(args: Args) -> SResult<SExpr> {
+pub fn input_port_qm(args: Args) -> SResult<SExpr> {
     call_check_fn!(args, is_input)
 }
 
-pub fn output_port__(args: Args) -> SResult<SExpr> {
+pub fn output_port_qm(args: Args) -> SResult<SExpr> {
     call_check_fn!(args, is_output)
 }
 
-pub fn textual_port__(args: Args) -> SResult<SExpr> {
+pub fn textual_port_qm(args: Args) -> SResult<SExpr> {
     call_check_fn!(args, is_textual)
 }
 
-pub fn binary_port__(args: Args) -> SResult<SExpr> {
+pub fn binary_port_qm(args: Args) -> SResult<SExpr> {
     call_check_fn!(args, is_binary)
 }
 
@@ -190,7 +190,7 @@ pub fn display(args: Args) -> SResult<SExpr> {
 pub fn close_port(args: Args) -> SResult<SExpr> {
     let mut remove = false;
     args.get(0)
-        .expect("Expected a port as argument, found nothing.")
+        .ok_or_else(|| SErr::WrongArgCount(1, 0))?
         .eval_ref(&args.env, |port_expr| match port_expr {
             SExpr::Port(_) => {
                 remove = true;

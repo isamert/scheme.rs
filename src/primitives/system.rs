@@ -9,13 +9,12 @@ use evaluator::Args;
 use serr::SResult;
 
 fn get_path_from_args(args: Args) -> SResult<String> {
-    let (file_name, _rest) = args.evaled()?
-        .own_one()?;
-
-    file_name.into_str()
+    args.evaled()?
+        .own_one()?
+        .into_str()
 }
 
-pub fn file_exists(args: Args) -> SResult<SExpr> {
+pub fn file_exists_qm(args: Args) -> SResult<SExpr> {
     Ok(SExpr::boolean(Path::new(&get_path_from_args(args)?).exists()))
 }
 
@@ -53,8 +52,8 @@ pub fn load(args: Args) -> SResult<SExpr> {
 }
 
 // system*
-pub fn system__(args: Args) -> SResult<SExpr> {
-    let (cmd_expr, arg_expr) = args.evaled()?.own_one()?;
+pub fn system_star(args: Args) -> SResult<SExpr> {
+    let (cmd_expr, arg_expr) = args.evaled()?.own_one_rest()?;
     let cmd = cmd_expr.into_str()?;
     let argus = arg_expr.into_iter()
         .map(|x| x.into_str())

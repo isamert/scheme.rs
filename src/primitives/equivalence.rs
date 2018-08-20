@@ -3,11 +3,11 @@ use parser::SExpr;
 use evaluator::Args;
 use serr::SResult;
 
-pub fn eq(args: Args) -> SResult<SExpr> {
-    eqv(args)
+pub fn eq_qm(args: Args) -> SResult<SExpr> {
+    eqv_qm(args)
 }
 
-pub fn eqv(args: Args) -> SResult<SExpr> {
+pub fn eqv_qm(args: Args) -> SResult<SExpr> {
     equality(args, |args| {
         let evaled = args.eval()?;
         let result = match (&evaled[0], &evaled[1]) {
@@ -21,7 +21,7 @@ pub fn eqv(args: Args) -> SResult<SExpr> {
     })
 }
 
-pub fn equal(args: Args) -> SResult<SExpr> {
+pub fn equal_qm(args: Args) -> SResult<SExpr> {
     equality(args, |args| {
         let evaled = args.eval()?;
         let obj1 = &evaled[0];

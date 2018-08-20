@@ -165,6 +165,32 @@ impl SExpr {
         }
     }
 
+    pub fn is_pair(&self) -> bool {
+        match self {
+            SExpr::List(xs) if !xs.is_empty() => true,
+            SExpr::DottedList(_, _) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_proper_list(&self) -> bool {
+        match self {
+            SExpr::List(_) => true,
+            SExpr::DottedList(_, y) => match &**y {
+                SExpr::List(xs) if xs.is_empty() => true,
+                _ => false
+            }
+            _ => false
+        }
+    }
+
+    pub fn is_boolean(&self) -> bool {
+        match self {
+            SExpr::Atom(Token::Boolean(_)) => true,
+            _ => false
+        }
+    }
+
     pub fn is_unspecified(&self) -> bool {
         match self {
             SExpr::Unspecified => true,
@@ -199,6 +225,13 @@ impl SExpr {
         match self {
             SExpr::Atom(Token::Symbol(x)) => Ok(x.to_string()),
             x => bail!(TypeMismatch => "string", x)
+        }
+    }
+
+    pub fn as_int(&self) -> SResult<i64> {
+        match self {
+            SExpr::Atom(Token::Integer(x)) => Ok(*x),
+            x => bail!(TypeMismatch => "integer", x)
         }
     }
 
@@ -298,7 +331,15 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SResult<SExpr> {
                         bail!(NotExpectedToken => unexpected, Token::RParen)
                     } else {
                         iter.next(); // Consume RParen
-                        Ok(SExpr::DottedList(head, Box::new(tail)))
+
+                        // If the tail is a proper list, then the result should
+                        // also be a proper list.
+                        if let SExpr::List(mut xs) = tail {
+                            head.append(&mut xs);
+                            Ok(SExpr::List(head))
+                        } else {
+                            Ok(SExpr::DottedList(head, Box::new(tail)))
+                        }
                     }
                 },
                 Some(Token::RParen) => {

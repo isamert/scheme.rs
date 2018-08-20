@@ -86,17 +86,17 @@ pub fn case(args: Args) -> SResult<SExpr> {
 }
 
 pub fn or(args: Args) -> SResult<SExpr> {
-    let result = args.eval()?
-        .iter()
-        .any(|x| x.to_bool());
+    for expr in args.all() {
+        if expr.eval(&args.env)?.to_bool() { return Ok(SExpr::boolean(true)) }
+    }
 
-    Ok(SExpr::boolean(result))
+    Ok(SExpr::boolean(false))
 }
 
 pub fn and(args: Args) -> SResult<SExpr> {
-    let result = args.eval()?
-        .iter()
-        .all(|x| x.to_bool());
+    for expr in args.all() {
+        if !expr.eval(&args.env)?.to_bool() { return Ok(SExpr::boolean(false)) }
+    }
 
-    Ok(SExpr::boolean(result))
+    Ok(SExpr::boolean(true))
 }
