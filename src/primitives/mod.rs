@@ -21,6 +21,7 @@ pub fn env() -> EnvValues {
         "quote"       => lang::quote,
         "quasiquote"  => lang::quasiquote,
         "unquote"     => lang::unquote,
+        "begin"       => lang::begin,
 
         "eqv?"   => equivalence::eqv_qm,
         "eq?"    => equivalence::eq_qm,

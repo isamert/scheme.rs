@@ -23,6 +23,15 @@ pub fn lambda(args: Args) -> SResult<SExpr> {
     ProcedureData::new_compound(params, body, &env)
 }
 
+pub fn begin(args: Args) -> SResult<SExpr> {
+    let result = args.eval()?
+        .into_iter()
+        .last()
+        .unwrap_or_else(|| SExpr::Unspecified);
+
+    Ok(result)
+}
+
 pub fn let_(args: Args) -> SResult<SExpr> {
     let_generic(args, |expr, _, parent_env| expr.eval(parent_env))
 }
