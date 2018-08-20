@@ -5,22 +5,6 @@ use evaluator::ToArgs;
 use serr::{SErr, SResult};
 
 
-pub fn if_(args: Args) -> SResult<SExpr> {
-    let test = args.get(0)
-        .ok_or_else(|| SErr::WrongArgCount(2, 0))?;
-    let consequent = args.get(1)
-        .ok_or_else(|| SErr::WrongArgCount(2, 1))?;
-    let alterne = args.get(2)
-        .unwrap_or(&SExpr::Unspecified);
-
-    let env = &args.env;
-    if test.eval(&env)?.to_bool() {
-        consequent.eval(&env)
-    } else {
-        alterne.eval(&env)
-    }
-}
-
 pub fn cond(args: Args) -> SResult<SExpr> {
     let clauses = args.all()
         .iter()

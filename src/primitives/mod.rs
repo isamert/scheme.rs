@@ -21,7 +21,6 @@ pub fn env() -> EnvValues {
         "quote"       => lang::quote,
         "quasiquote"  => lang::quasiquote,
         "unquote"     => lang::unquote,
-        "begin"       => lang::begin,
 
         "eqv?"   => equivalence::eqv_qm,
         "eq?"    => equivalence::eq_qm,
@@ -45,7 +44,6 @@ pub fn env() -> EnvValues {
         ">=" => ordering::gte,
         "="  => ordering::eq,
 
-        "if"   => conditionals::if_,
         "cond" => conditionals::cond,
         "case" => conditionals::case,
         "and"  => conditionals::and,
