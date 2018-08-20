@@ -1,8 +1,8 @@
 use std::vec::IntoIter;
 use std::iter::Peekable;
 use std::str::FromStr;
-use std::num::ParseIntError; 
-use std::ops::{Add, Sub, Mul, Div}; 
+use std::num::ParseIntError;
+use std::ops::{Add, Sub, Mul, Div};
 
 pub trait GentleIterator<I: Iterator> {
     fn take_until<F>(&mut self, predicate: F) -> IntoIter<I::Item>
@@ -150,4 +150,3 @@ macro_rules! environment(
         }
     };
 );
-

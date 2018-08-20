@@ -5,7 +5,7 @@ use parser::SExpr;
 use parser::SExprs;
 use env::EnvRef;
 use env::EnvRefT;
-use procedure::{ProcedureData, PrimitiveData, CompoundData};
+use procedure::ProcedureData;
 use serr::{SErr, SResult};
 
 pub fn eval_mut_ref<F,T>(sexpr: &SExpr, env: &EnvRef, mut f: F) -> SResult<T>
