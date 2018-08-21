@@ -1,9 +1,9 @@
 use std::ops::{Add, Sub, Mul, Div};
 
+use utils::fraction;
 use lexer::Token;
 use parser::SExpr;
 use evaluator::Args;
-use util;
 use serr::{SErr, SResult};
 
 pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
@@ -19,7 +19,7 @@ pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
 
     type I = fn(i64,i64)->i64;
     type Fl = fn(f64,f64)->f64;
-    type Fr = fn(util::Fraction, util::Fraction)->util::Fraction;
+    type Fr = fn(fraction::Fraction, fraction::Fraction)->fraction::Fraction;
     let (opi,opfl,opfr): (I, Fl, Fr) = match op_str {
         '+' => (Add::add,Add::add,Add::add),
         '-' => (Sub::sub, Sub::sub, Sub::sub),
@@ -36,7 +36,7 @@ pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
             (Atom(Integer(a)), Atom(Integer(b))) => {
                 // Like it isnt ugly already
                 if op_str == '/' && a % b != 0 {
-                    Atom(Fraction(util::Fraction::new(a,b)))
+                    Atom(Fraction(fraction::Fraction::new(a,b)))
                 } else {
                     Atom(Integer(opi(a,b)))
                 }

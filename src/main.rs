@@ -1,13 +1,13 @@
 #[macro_use]
-mod util;
-
-#[macro_use]
 mod serr;
+#[macro_use]
+mod utils;
 
 mod env;
 mod lexer;
 mod parser;
-mod ports;
+mod expander;
+mod port;
 mod procedure;
 mod evaluator;
 mod primitives;

@@ -3,9 +3,9 @@ use std::str::Chars;
 use std::string::ParseError;
 use std::cmp::Ordering;
 
-use util::GentleIterator;
-use util::AndOr;
-use util::Fraction;
+use utils::GentleIterator;
+use utils::AndOr;
+use utils::fraction::Fraction;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {

@@ -8,7 +8,8 @@ use lexer::Token;
 use procedure::ProcedureData;
 use evaluator;
 use env::EnvRef;
-use ports::PortData;
+use port::PortData;
+use expander::expand;
 use serr::{SErr, SResult};
 
 pub type SExprs = Vec<SExpr>;
@@ -299,7 +300,7 @@ pub fn parse(tokens: Vec<Token>) -> SResult<SExprs> {
     let mut exprs: SExprs = vec![];
 
     while let Some(_) = iter.peek() {
-        exprs.push(parse_helper(&mut iter)?);
+        exprs.push(expand(parse_helper(&mut iter)?)?);
     }
 
     Ok(exprs)
