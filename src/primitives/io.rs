@@ -1,6 +1,7 @@
-use parser::SExpr;
+use lexer::TokenIterator;
+use parser::{SExpr, parse_single};
 use evaluator::Args;
-use port::PortData;
+use port::{PortData, current_input_port, current_output_port};
 use env::EnvRefT;
 use serr::{SErr, SResult};
 
@@ -18,7 +19,6 @@ fn get_path_from_args(args: Args) -> SResult<String> {
         .into_str()
 }
 
-#[macro_export]
 macro_rules! call_check_fn(
     ($args: ident, $fn: ident) => {
         {
@@ -34,14 +34,11 @@ macro_rules! call_check_fn(
     };
 );
 
-#[macro_export]
 macro_rules! call_read_fn(
     ($args: ident, $fn: ident) => {
         {
             if $args.len() == 0 {
-                let (_size, result) = PortData::current_input()
-                    .$fn()?;
-
+                let (_size, result) = current_input_port().$fn()?;
                 Ok(result)
             } else {
                 let (_size, result) = $args.get(0)
@@ -57,13 +54,11 @@ macro_rules! call_read_fn(
     };
 );
 
-#[macro_export]
 macro_rules! call_write_fn(
     ($args: ident, $fn: ident, $thing: expr) => {
         {
             if $args.len() <= 1 {
-                PortData::current_output()
-                    .$fn(&$thing)?;
+                current_output_port().$fn(&$thing)?;
             } else if $args.len() > 1 {
                 $args.get(1)
                     .ok_or_else(|| SErr::WrongArgCount(1, 0))?
@@ -112,6 +107,27 @@ pub fn open_binary_input_file(args: Args) -> SResult<SExpr> {
 
 pub fn open_binary_output_file(args: Args) -> SResult<SExpr> {
     Ok(SExpr::Port(PortData::new_binary_file_output(&get_path_from_args(args)?)?))
+}
+
+pub fn read(args: Args) -> SResult<SExpr> {
+    // I just couldn't define this closure as a simple variable
+    macro_rules! parse_chars(() => {
+        |chars| {
+            let mut iter = TokenIterator::new(chars).peekable();
+            Ok(parse_single(&mut iter)?)
+        }
+    };);
+
+    if args.len() == 0 {
+        current_input_port().with_chars(parse_chars!())
+    } else {
+        args.get(0)
+            .ok_or_else(|| SErr::WrongArgCount(1, 0))?
+            .eval_mut_ref(&args.env, |port_expr| {
+                port_expr.as_port_mut()?
+                    .with_chars(parse_chars!())
+            })
+    }
 }
 
 pub fn read_line(args: Args) -> SResult<SExpr> {

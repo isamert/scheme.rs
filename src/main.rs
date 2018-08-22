@@ -32,7 +32,7 @@ fn main() {
         let scm = read_to_string(path).expect("Can't read file.");
 
         // TODO: run main function? (define (main args) ...)
-        match parse(tokenize(&scm)) {
+        match parse(tokenize(&mut scm.chars().peekable())) {
             Ok(sexprs) => {
                 for sexpr in sexprs {
                     match sexpr.eval(&env) {

@@ -2,6 +2,7 @@
 pub mod macros;
 pub mod fraction;
 pub mod funcs;
+pub mod chars;
 
 use std::vec::IntoIter;
 use std::iter::Peekable;

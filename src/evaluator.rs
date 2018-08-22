@@ -1,4 +1,5 @@
-use std::ops::Index;
+use std::ops::{Deref, DerefMut};
+use std::vec::IntoIter;
 
 use lexer::Token;
 use parser::SExpr;
@@ -43,7 +44,6 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
     let mut env = env_.clone_ref();
     loop {
         match sexpr {
-            SExpr::Tagged(_,_) => bail!(Generic => "Not implemented yet!"),
             SExpr::Atom(Token::Symbol(x)) => {
                 let result = env.get(&x)?;
 
@@ -91,7 +91,7 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
                     // Other control structres should be written in forms of
                     // if or begin (and I hope that's all for basic TCO)
                     SExpr::Atom(Token::Symbol(ref sym)) if sym == "if" => {
-                        let mut arg_iter = args.into_all().into_iter();
+                        let mut arg_iter = args.into_iter();
                         let test = arg_iter.next()
                             .ok_or_else(|| SErr::WrongArgCount(2, 0))?;
                         let consequent = arg_iter.next()
@@ -163,11 +163,17 @@ pub struct Args {
     vec: SExprs
 }
 
-impl Index<usize> for Args {
-    type Output = SExpr;
+impl Deref for Args {
+    type Target = SExprs;
 
-    fn index(&self, i: usize) -> &SExpr {
-        self.get(i).unwrap()
+    fn deref(&self) -> &SExprs {
+        &self.vec
+    }
+}
+
+impl DerefMut for Args {
+    fn deref_mut(&mut self) -> &mut SExprs {
+        &mut self.vec
     }
 }
 
@@ -184,28 +190,8 @@ impl Args {
         self.env.clone()
     }
 
-    pub fn into_all(self) -> SExprs {
-        self.vec
-    }
-
-    pub fn into_split(self) -> SResult<(SExpr, SExprs)> {
-        let mut iter = self.vec.into_iter();
-        let head = iter.next();
-        let tail = iter.collect();
-
-        if head.is_some() {
-            Ok((head.unwrap(), tail))
-        } else {
-            serr!(FoundNothing)
-        }
-    }
-
-    pub fn get(&self, i: usize) -> Option<&SExpr> {
-        self.vec.get(i)
-    }
-
-    pub fn all(&self) -> &SExprs {
-        &self.vec
+    pub fn into_iter(self) -> IntoIter<SExpr> {
+        self.vec.into_iter()
     }
 
     pub fn eval(&self) -> SResult<SExprs> {

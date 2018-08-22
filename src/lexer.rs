@@ -1,6 +1,4 @@
 use std::iter::Peekable;
-use std::str::Chars;
-use std::string::ParseError;
 use std::cmp::Ordering;
 
 use utils::GentleIterator;
@@ -54,7 +52,6 @@ impl PartialOrd for Token {
     }
 }
 
-
 impl Token {
     fn get(chr: char) -> Token {
         match chr {
@@ -70,32 +67,53 @@ impl Token {
     }
 }
 
-pub fn tokenize(input: &str) -> Vec<Token> {
+pub struct TokenIterator<I: Iterator<Item=char>> {
+    inner: Peekable<I>
+}
+
+impl<I: Iterator<Item=char>> TokenIterator<I> {
+    pub fn new(inner: I) -> Self {
+        TokenIterator {
+            inner: inner.peekable()
+        }
+    }
+}
+
+impl<I: Iterator<Item=char>> Iterator for TokenIterator<I> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Token> {
+        tokenize_single(&mut self.inner)
+    }
+}
+
+pub fn tokenize_single<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
+    while parse_whitespace(iter) || parse_comment(iter) {
+        continue
+    }
+
+    parse_lparen(iter)
+        .or_else(|| parse_quote(iter))
+        .or_else(|| parse_unquote(iter))
+        .or_else(|| parse_quasiquote(iter))
+        .or_else(|| parse_rparen(iter))
+        .or_else(|| parse_string(iter))
+        .or_else(|| parse_hash(iter))
+        .or_else(|| parse_symbol(iter))
+}
+
+pub fn tokenize<I>(iter: &mut Peekable<I>) -> Vec<Token>
+where I: Iterator<Item = char> {
     let mut tokens: Vec<Token> = vec![];
-    let iter = &mut input.chars().peekable();
 
     loop {
-        if parse_whitespace(iter) || parse_comment(iter) {
-            continue
-        }
-
-        // or() is eagerly evaluated
-        // thats why I used or_else
-        let token = parse_lparen(iter)
-            .or_else(|| parse_quote(iter))
-            .or_else(|| parse_unquote(iter))
-            .or_else(|| parse_quasiquote(iter))
-            .or_else(|| parse_rparen(iter))
-            .or_else(|| parse_string(iter))
-            .or_else(|| parse_hash(iter))
-            .or_else(|| parse_symbol(iter));
-
-        if let Some(x) = token {
+        if let Some(x) = tokenize_single(iter) {
             tokens.push(x)
         } else {
             break;
         }
-    };
+    }
 
     tokens
 }
@@ -103,7 +121,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 //
 // Parsers
 //
-fn parse_whitespace(iter: &mut Peekable<Chars>) -> bool {
+fn parse_whitespace<I>(iter: &mut Peekable<I>) -> bool
+where I: Iterator<Item = char> {
     if check_chr(iter, ' ') || check_chr(iter, '\n') {
         iter.next();
         true
@@ -112,7 +131,8 @@ fn parse_whitespace(iter: &mut Peekable<Chars>) -> bool {
     }
 }
 
-fn parse_comment(iter: &mut Peekable<Chars>) -> bool {
+fn parse_comment<I>(iter: &mut Peekable<I>) -> bool
+where I: Iterator<Item = char> {
     if check_chr(iter, ';') {
         iter.take_until(|c| *c != '\n');
         true
@@ -121,30 +141,36 @@ fn parse_comment(iter: &mut Peekable<Chars>) -> bool {
     }
 }
 
-fn parse_quote(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_quote<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     parse_single(iter, '\'')
 }
 
-fn parse_unquote(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_unquote<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     parse_single(iter, ',')
         .and_or(parse_single(iter, '@'))
 }
 
-fn parse_quasiquote(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_quasiquote<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     parse_single(iter, '`')
 }
 
-fn parse_lparen(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_lparen<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     parse_single(iter, '(')
         .or_else(|| parse_single(iter, '['))
 }
 
-fn parse_rparen(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_rparen<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     parse_single(iter, ')')
         .or_else(|| parse_single(iter, ']'))
 }
 
-fn parse_string(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_string<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     // FIXME: check escape chars
     if !check_chr(iter, '"') {
         return None
@@ -158,7 +184,8 @@ fn parse_string(iter: &mut Peekable<Chars>) -> Option<Token> {
     Some(Token::Str(value))
 }
 
-fn parse_hash(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_hash<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     if !check_chr(iter, '#') {
         return None
     }
@@ -188,7 +215,8 @@ fn parse_hash(iter: &mut Peekable<Chars>) -> Option<Token> {
     }
 }
 
-fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
+fn parse_symbol<I>(iter: &mut Peekable<I>) -> Option<Token>
+where I: Iterator<Item = char> {
     // Check if iter is empty or not
     if !check(iter, |_| true) {
         return None
@@ -211,7 +239,8 @@ fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
 }
 
 /// Parse a single char and return the corresponding Token
-fn parse_single(iter: &mut Peekable<Chars>, chr: char) -> Option<Token> {
+fn parse_single<I>(iter: &mut Peekable<I>, chr: char) -> Option<Token>
+where I: Iterator<Item = char> {
     if !check_chr(iter, chr) {
         return None
     }
@@ -223,8 +252,9 @@ fn parse_single(iter: &mut Peekable<Chars>, chr: char) -> Option<Token> {
 //
 // Helper functions
 //
-fn check<F>(iter: &mut Peekable<Chars>, fun: F) -> bool
-where F: Fn(char) -> bool {
+fn check<F,I>(iter: &mut Peekable<I>, fun: F) -> bool
+where F: Fn(char) -> bool,
+      I: Iterator<Item = char> {
     if let Some(&x) = iter.peek() {
         fun(x)
     } else {
@@ -232,6 +262,7 @@ where F: Fn(char) -> bool {
     }
 }
 
-fn check_chr(iter: &mut Peekable<Chars>, chr: char) -> bool {
+fn check_chr<I>(iter: &mut Peekable<I>, chr: char) -> bool
+where I: Iterator<Item = char> {
     check(iter, |x| x == chr)
 }

@@ -6,6 +6,7 @@ use std::process::Command;
 use lexer::tokenize;
 use parser::{parse, SExpr};
 use evaluator::Args;
+use port::current_output_port;
 use serr::SResult;
 
 fn get_path_from_args(args: Args) -> SResult<String> {
@@ -41,10 +42,10 @@ pub fn load(args: Args) -> SResult<SExpr> {
     let env = args.env();
     let scm = read_to_string(get_path_from_args(args)?)?;
 
-    for sexpr in parse(tokenize(&scm))? {
+    for sexpr in parse(tokenize(&mut scm.chars().peekable()))? {
         let result = sexpr.eval(&env)?;
         if !result.is_unspecified() {
-            println!("{}", result);
+            current_output_port().write_string(&format!("{}\n", result))?;
         }
     }
 

@@ -1,9 +1,7 @@
-use lexer::Token;
 use parser::SExpr;
-use serr::{SErr, SResult};
+use serr::{SResult};
 
 pub fn expand(sexpr: SExpr) -> SResult<SExpr> {
+    // TODO: after implementing hygienic macros, expand them here
     Ok(sexpr)
-    // Expand these:
-    // https://schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-6.html#%_sec_3.5
 }

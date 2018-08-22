@@ -21,8 +21,7 @@ pub fn boolean_qm(args: Args) -> SResult<SExpr> {
 // boolean=?
 pub fn boolean_eq_qm(args: Args) -> SResult<SExpr> {
     let env = args.env();
-    let mut iter = args.into_all()
-        .into_iter();
+    let mut iter = args.into_iter();
 
     let control = iter.next()
         .ok_or_else(|| SErr::WrongArgCount(1, 0))?

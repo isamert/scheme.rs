@@ -1,6 +1,4 @@
 use std::iter::Peekable;
-use std::vec::IntoIter;
-use std::ops::Deref;
 use std::ops::Not;
 use std::cmp::Ordering;
 
@@ -15,6 +13,7 @@ use serr::{SErr, SResult};
 pub type SExprs = Vec<SExpr>;
 
 // TODO: needs huge refactoring
+/*
 #[derive(Debug, Clone)]
 pub struct Expr {
     sexpr: SExpr,
@@ -28,6 +27,7 @@ impl Deref for Expr {
         &self.sexpr
     }
 }
+*/
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SExpr {
@@ -38,7 +38,6 @@ pub enum SExpr {
     Procedure(ProcedureData),
     Port(PortData),
     Lazy(Box<SExpr>),
-    Tagged(Box<SExpr>, usize),
     Unspecified
 }
 
@@ -274,7 +273,7 @@ impl SExpr {
     }
 
     // Transform operations
-    pub fn into_split(self) -> SResult<(SExpr, SExprs)> {
+    pub fn list_own_one_rest(self) -> SResult<(SExpr, SExprs)> {
         match self {
             SExpr::List(xs) => {
                 let mut iter = xs.into_iter();
@@ -308,13 +307,14 @@ pub fn parse(tokens: Vec<Token>) -> SResult<SExprs> {
     let mut exprs: SExprs = vec![];
 
     while let Some(_) = iter.peek() {
-        exprs.push(expand(parse_helper(&mut iter)?)?);
+        exprs.push(expand(parse_single(&mut iter)?)?);
     }
 
     Ok(exprs)
 }
 
-fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SResult<SExpr> {
+pub fn parse_single<I>(iter: &mut Peekable<I>) -> SResult<SExpr>
+where I: Iterator<Item=Token> {
     match iter.peek() {
         Some(&Token::RParen) => bail!(UnexpectedToken => Token::RParen),
         Some(&Token::LParen) => {
@@ -329,12 +329,12 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SResult<SExpr> {
             let mut head: SExprs = vec![];
             while iter.peek() != Some(&Token::RParen) &&
                     iter.peek() != Some(&Token::Dot) {
-                head.push(parse_helper(iter)?);
+                head.push(parse_single(iter)?);
             }
 
             match iter.next() {
                 Some(Token::Dot) => {
-                    let tail = parse_helper(iter)?;
+                    let tail = parse_single(iter)?;
                     if iter.peek() != Some(&Token::RParen) {
                         let unexpected = iter.peek().unwrap().clone();
                         bail!(NotExpectedToken => unexpected, Token::RParen)
@@ -359,19 +359,19 @@ fn parse_helper(iter: &mut Peekable<IntoIter<Token>>) -> SResult<SExpr> {
         },
         Some(&Token::Quote) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("quote"), parse_helper(iter)?]))
+            Ok(SExpr::List(vec![SExpr::symbol("quote"), parse_single(iter)?]))
         },
         Some(&Token::UnQuote) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("unquote"), parse_helper(iter)?]))
+            Ok(SExpr::List(vec![SExpr::symbol("unquote"), parse_single(iter)?]))
         },
         Some(&Token::QuasiQuote) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("quasiquote"), parse_helper(iter)?]))
+            Ok(SExpr::List(vec![SExpr::symbol("quasiquote"), parse_single(iter)?]))
         },
         Some(&Token::UnQuoteSplicing) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("unquote-splicing"), parse_helper(iter)?]))
+            Ok(SExpr::List(vec![SExpr::symbol("unquote-splicing"), parse_single(iter)?]))
         },
         Some(_) => {
             let y = iter.next().unwrap();

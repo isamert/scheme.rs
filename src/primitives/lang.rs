@@ -19,7 +19,7 @@ pub fn set(args: Args) -> SResult<SExpr> {
 
 pub fn lambda(args: Args) -> SResult<SExpr> {
     let env = args.env();
-    let (params, body) = args.into_split()?;
+    let (params, body) = args.own_one_rest()?;
     ProcedureData::new_compound(params, body, &env)
 }
 
@@ -43,7 +43,7 @@ pub fn quote(args: Args) -> SResult<SExpr> {
     Ok(args[0].clone())
 }
 
-pub fn quasiquote(args: Args) -> SResult<SExpr> {
+pub fn quasiquote(mut args: Args) -> SResult<SExpr> {
     if args.len() != 1 {
         bail!(WrongArgCount => 1 as usize, args.len())
     }
@@ -53,13 +53,7 @@ pub fn quasiquote(args: Args) -> SResult<SExpr> {
         _ => 1
     };
 
-    let env = &args.env();
-    let args = Args::new_with_extra(
-        args.into_all(),
-        Extra::QQLevel(level),
-        &env
-    );
-
+    args.extra = Extra::QQLevel(level);
     if level == 1 {
         eval_unquoted(args)
     } else if level > 1 {
@@ -80,7 +74,7 @@ pub fn unquote(args: Args) -> SResult<SExpr> {
     };
 
     let env = args.env();
-    let arg = args.into_all().pop().unwrap();
+    let arg = args.own_one()?;
 
     if level == 0 {
         arg.eval(&env)
@@ -148,8 +142,8 @@ fn env_add(t: EnvAddType, args: Args) -> SResult<SExpr> {
             (id.clone(), value_sexpr)
         },
         SExpr::List(_) => {
-            let (header, body) = args.into_split()?;
-            let (id, params) = header.into_split()?;
+            let (header, body) = args.own_one_rest()?;
+            let (id, params) = header.list_own_one_rest()?;
 
             (id.into_symbol()?, ProcedureData::new_compound(SExpr::List(params), body, &env)?)
         },
@@ -158,7 +152,7 @@ fn env_add(t: EnvAddType, args: Args) -> SResult<SExpr> {
             let id = iter.next()
                 .ok_or_else(|| SErr::new_generic("Expected an identifier, found nothing."))?;
             let head = iter.take_while(|_| true).collect::<SExprs>();
-            let (_, body) = args.into_split()?;
+            let (_, body) = args.own_one_rest()?;
 
             let arg_list = match head.len() {
                 // (define (x . y) ...)
@@ -187,7 +181,7 @@ fn env_add(t: EnvAddType, args: Args) -> SResult<SExpr> {
 pub fn let_generic<F>(args: Args, mut eval_expr: F) -> SResult<SExpr>
 where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SResult<SExpr>) {
     let parent_env = args.env();
-    let (bindings, body) = args.into_split()?;
+    let (bindings, body) = args.own_one_rest()?;
 
     let env = Env::new(parent_env.clone())
         .into_ref();

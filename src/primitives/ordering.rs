@@ -27,7 +27,7 @@ pub fn eq(args: Args) -> SResult<SExpr> {
 
 fn compare<F>(args: Args, op: F) -> SResult<SExpr>
 where F: Fn(&SExpr,&SExpr) -> bool {
-    Ok(SExpr::boolean(check(&args.all(), op, &args.env)?))
+    Ok(SExpr::boolean(check(&args, op, &args.env)?))
 }
 
 fn check<F>(xs: &[SExpr], op: F, env: &EnvRef) -> SResult<bool>

@@ -6,8 +6,7 @@ use serr::{SErr, SResult};
 
 
 pub fn cond(args: Args) -> SResult<SExpr> {
-    let clauses = args.all()
-        .iter()
+    let clauses = args.iter()
         .map(|x| {
             if let SExpr::List(clause) = x {
                 let mut current = 0;
@@ -53,8 +52,7 @@ pub fn case(args: Args) -> SResult<SExpr> {
     let test = args.get(0)
         .ok_or_else(|| SErr::WrongArgCount(1,0))?;
 
-    let args_vec: SExprs = args.all()
-        .iter()
+    let args_vec: SExprs = args.iter()
         .skip(1)
         .map(|clause| {
             if let SExpr::List(xs) = clause {
@@ -70,7 +68,7 @@ pub fn case(args: Args) -> SResult<SExpr> {
 }
 
 pub fn or(args: Args) -> SResult<SExpr> {
-    for expr in args.all() {
+    for expr in args.iter() {
         if expr.eval(&args.env)?.to_bool() { return Ok(SExpr::boolean(true)) }
     }
 
@@ -78,7 +76,7 @@ pub fn or(args: Args) -> SResult<SExpr> {
 }
 
 pub fn and(args: Args) -> SResult<SExpr> {
-    for expr in args.all() {
+    for expr in args.iter() {
         if !expr.eval(&args.env)?.to_bool() { return Ok(SExpr::boolean(false)) }
     }
 

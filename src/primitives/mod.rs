@@ -7,14 +7,11 @@ pub mod conditionals;
 pub mod list;
 pub mod io;
 pub mod system;
-pub mod macros;
 
 use env::EnvValues;
 
 pub fn env() -> EnvValues {
     environment! {
-        "syntax-rules" => macros::syntax_rules,
-
         "define"      => lang::define,
         "set!"        => lang::set,
         "lambda"      => lang::lambda,
@@ -76,6 +73,7 @@ pub fn env() -> EnvValues {
         "input-port?"      => io::output_port_qm,
         "textual-port?"    => io::textual_port_qm,
         "binary-port?"     => io::binary_port_qm,
+        "read"             => io::read,
         "read-u8"          => io::read_u8,
         "read-line"        => io::read_line,
         "read-char"        => io::read_char,

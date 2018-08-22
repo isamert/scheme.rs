@@ -5,6 +5,7 @@ use std::io;
 use std::io::{BufReader, BufWriter, Stdin, Stdout};
 
 use serr::{SErr, SResult};
+use utils::chars::Chars;
 
 #[derive(Debug)]
 pub enum PortData {
@@ -89,16 +90,6 @@ impl PortData {
         Ok(PortData::BinaryFileOutput(path.to_string(), BufWriter::new(file)))
     }
 
-    pub fn current_input() -> PortData {
-        // TODO: current_input should be changable
-        PortData::StdInput(io::stdin())
-    }
-
-    pub fn current_output() -> PortData {
-        // TODO: current_output should be changable
-        PortData::StdOutput(io::stdout())
-    }
-
     //
     // Read functions
     //
@@ -152,6 +143,21 @@ impl PortData {
         }
     }
 
+    pub fn with_chars<F, T>(&mut self, f: F) -> SResult<T>
+    where F: FnOnce(&mut Iterator<Item=char>) -> SResult<T>,
+          {
+        match self {
+            PortData::TextualFileInput(_, br) => {
+                let mut chars = Chars::new(br);
+                f(&mut chars)
+            },
+            PortData::StdInput(br) => {
+                let mut chars = Chars::new(br);
+                f(&mut chars)
+            },
+            _x => bail!(WrongPort => "chars", "TODO:PORT_NAME_HERE")
+        }
+    }
     //
     // Write functions
     //
@@ -210,3 +216,15 @@ impl PortData {
         }
     }
 }
+
+
+pub fn current_input_port() -> PortData {
+    // TODO: current_input should be changable
+    PortData::StdInput(io::stdin())
+}
+
+pub fn current_output_port() -> PortData {
+    // TODO: current_output should be changable
+    PortData::StdOutput(io::stdout())
+}
+

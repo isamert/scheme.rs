@@ -15,7 +15,7 @@ pub fn run(env: &EnvRef) {
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut line).unwrap();
 
-        let tokens = lexer::tokenize(&line);
+        let tokens = lexer::tokenize(&mut line.chars().peekable());
         let sexprs = parser::parse(tokens);
 
         match sexprs {
