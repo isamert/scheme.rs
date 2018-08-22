@@ -7,6 +7,10 @@ use utils::GentleIterator;
 use utils::AndOr;
 use utils::fraction::Fraction;
 
+// TODO: string.parse::<Token>();
+
+struct Dummy;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     LParen,
@@ -19,6 +23,7 @@ pub enum Token {
     Chr(char),
     Str(String),
     Dot,
+    Ellipsis,
     Quote,
     QuasiQuote,
     UnQuote,
@@ -81,7 +86,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             .or_else(|| parse_unquote(iter))
             .or_else(|| parse_quasiquote(iter))
             .or_else(|| parse_rparen(iter))
-            .or_else(|| parse_dot(iter))
             .or_else(|| parse_string(iter))
             .or_else(|| parse_hash(iter))
             .or_else(|| parse_symbol(iter));
@@ -119,10 +123,6 @@ fn parse_comment(iter: &mut Peekable<Chars>) -> bool {
 
 fn parse_quote(iter: &mut Peekable<Chars>) -> Option<Token> {
     parse_single(iter, '\'')
-}
-
-fn parse_dot(iter: &mut Peekable<Chars>) -> Option<Token> {
-    parse_single(iter, '.')
 }
 
 fn parse_unquote(iter: &mut Peekable<Chars>) -> Option<Token> {
@@ -204,8 +204,9 @@ fn parse_symbol(iter: &mut Peekable<Chars>) -> Option<Token> {
             if f.is_int() { Token::Integer(f.n)}
             else { Token::Fraction(f) }
         }))
-        .or_else(|_| value.parse::<Fraction>().map(Token::Fraction))
-        .or_else::<ParseError,_>(|_| Ok(Token::Symbol(value)))
+        .or_else(|_| if value == "..." { Ok(Token::Ellipsis) } else { Err(Dummy) })
+        .or_else(|_| if value == "." { Ok(Token::Dot) } else { Err(Dummy) })
+        .or_else::<Dummy,_>(|_| Ok(Token::Symbol(value)))
         .ok()
 }
 

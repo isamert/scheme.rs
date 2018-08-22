@@ -43,6 +43,7 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
     let mut env = env_.clone_ref();
     loop {
         match sexpr {
+            SExpr::Tagged(_,_) => bail!(Generic => "Not implemented yet!"),
             SExpr::Atom(Token::Symbol(x)) => {
                 let result = env.get(&x)?;
 

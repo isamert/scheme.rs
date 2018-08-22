@@ -38,6 +38,7 @@ pub enum SExpr {
     Procedure(ProcedureData),
     Port(PortData),
     Lazy(Box<SExpr>),
+    Tagged(Box<SExpr>, usize),
     Unspecified
 }
 
@@ -155,6 +156,13 @@ impl SExpr {
     pub fn is_chr(&self) -> bool {
         match self {
             SExpr::Atom(Token::Chr(_)) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_ellipsis(&self) -> bool {
+        match self {
+            SExpr::Atom(Token::Ellipsis) => true,
             _ => false
         }
     }

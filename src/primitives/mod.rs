@@ -4,14 +4,17 @@ pub mod boolean;
 pub mod numeric;
 pub mod ordering;
 pub mod conditionals;
-pub mod lists;
+pub mod list;
 pub mod io;
 pub mod system;
+pub mod macros;
 
 use env::EnvValues;
 
 pub fn env() -> EnvValues {
     environment! {
+        "syntax-rules" => macros::syntax_rules,
+
         "define"      => lang::define,
         "set!"        => lang::set,
         "lambda"      => lang::lambda,
@@ -49,14 +52,14 @@ pub fn env() -> EnvValues {
         "and"  => conditionals::and,
         "or"   => conditionals::or,
 
-        "list"   => lists::list,
-        "cons"   => lists::cons,
-        "car"    => lists::car,
-        "cdr"    => lists::cdr,
-        "append" => lists::append,
-        "null?"  => lists::null_qm,
-        "pair?"  => lists::pair_qm,
-        "list?"  => lists::list_qm,
+        "list"   => list::list,
+        "cons"   => list::cons,
+        "car"    => list::car,
+        "cdr"    => list::cdr,
+        "append" => list::append,
+        "null?"  => list::null_qm,
+        "pair?"  => list::pair_qm,
+        "list?"  => list::list_qm,
 
         "load"         => system::load,
         "file-exists?" => system::file_exists_qm,
