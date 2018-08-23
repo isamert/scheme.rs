@@ -7,8 +7,6 @@ use utils::fraction::Fraction;
 
 // TODO: string.parse::<Token>();
 
-struct Dummy;
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     LParen,
@@ -226,16 +224,10 @@ where I: Iterator<Item = char> {
         .take_until(|c| *c != ' ' && *c != ')' && *c != ']' && *c != '\n')
         .collect();
 
-    value.parse::<i64>().map(Token::Integer)
-        .or_else(|_| value.parse::<f64>().map(Token::Float))
-        .or_else(|_| value.parse::<Fraction>().map(|f| {
-            if f.is_int() { Token::Integer(f.n)}
-            else { Token::Fraction(f) }
-        }))
-        .or_else(|_| if value == "..." { Ok(Token::Ellipsis) } else { Err(Dummy) })
-        .or_else(|_| if value == "." { Ok(Token::Dot) } else { Err(Dummy) })
-        .or_else::<Dummy,_>(|_| Ok(Token::Symbol(value)))
-        .ok()
+    parse_number(&value)
+        .or_else(|| if value == "..." { Some(Token::Ellipsis) } else { None })
+        .or_else(|| if value == "." { Some(Token::Dot) } else { None })
+        .or_else(|| Some(Token::Symbol(value)))
 }
 
 /// Parse a single char and return the corresponding Token
@@ -247,6 +239,16 @@ where I: Iterator<Item = char> {
 
     iter.next();
     Some(Token::get(chr))
+}
+
+pub fn parse_number(value: &str) -> Option<Token> {
+    value.parse::<i64>().map(Token::Integer)
+        .or_else(|_| value.parse::<f64>().map(Token::Float))
+        .or_else(|_| value.parse::<Fraction>().map(|f| {
+            if f.is_int() { Token::Integer(f.n)}
+            else { Token::Fraction(f) }
+        }))
+        .ok()
 }
 
 //

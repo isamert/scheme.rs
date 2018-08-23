@@ -3,6 +3,7 @@ pub mod macros;
 pub mod fraction;
 pub mod funcs;
 pub mod chars;
+pub mod radix;
 
 use std::vec::IntoIter;
 use std::iter::Peekable;

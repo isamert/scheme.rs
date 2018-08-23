@@ -2,6 +2,7 @@ use std::iter::Peekable;
 use std::ops::Not;
 use std::cmp::Ordering;
 
+use utils::fraction::Fraction;
 use lexer::Token;
 use procedure::ProcedureData;
 use evaluator;
@@ -78,12 +79,27 @@ impl<'a> From<&'a mut SExpr> for SExpr {
     }
 }
 
+
+impl From<i64> for SExpr {
+    fn from(i: i64) -> Self {
+        SExpr::Atom(Token::Integer(i))
+    }
+}
+
+impl From<f64> for SExpr {
+    fn from(i: f64) -> Self {
+        SExpr::Atom(Token::Float(i))
+    }
+}
+
+impl From<Fraction> for SExpr {
+    fn from(i: Fraction) -> Self {
+        SExpr::Atom(Token::Fraction(i))
+    }
+}
+
 #[allow(dead_code)]
 impl SExpr {
-    pub fn lazy(x: SExpr) -> SExpr {
-        SExpr::Lazy(Box::new(x))
-    }
-
     pub fn dottedlist(x: SExprs, y: SExpr) -> SExpr {
         SExpr::DottedList(x, Box::new(y))
     }
@@ -231,6 +247,21 @@ impl SExpr {
         }
     }
 
+    pub fn into_int(self) -> SResult<i64> {
+        match self {
+            SExpr::Atom(Token::Integer(x)) => Ok(x),
+            x => bail!(TypeMismatch => "int", x)
+        }
+    }
+
+    pub fn into_float(self) -> SResult<f64> {
+        match self {
+            SExpr::Atom(Token::Float(x)) => Ok(x),
+            SExpr::Atom(Token::Integer(x)) => Ok(x as f64),
+            SExpr::Atom(Token::Fraction(x)) => Ok(x.into()),
+            x => bail!(TypeMismatch => "float", x)
+        }
+    }
     // Transform operations
     pub fn list_own_one_rest(self) -> SResult<(SExpr, SExprs)> {
         match self {

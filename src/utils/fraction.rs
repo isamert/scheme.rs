@@ -1,6 +1,7 @@
 use std::num::ParseIntError;
 use std::ops::{Add, Sub, Mul, Div};
 use std::str::FromStr;
+use std::f64;
 
 use utils::funcs::gcd;
 
@@ -89,5 +90,41 @@ impl From<i64> for Fraction {
 impl From<Fraction> for f64 {
     fn from(f: Fraction) -> f64 {
         f.n as f64 / f.d as f64
+    }
+}
+
+impl From<f64> for Fraction {
+    // https://rosettacode.org/wiki/Convert_decimal_number_to_rational#Rust
+    fn from(mut n: f64) -> Fraction {
+        let flag_neg  = n < 0.0;
+        if flag_neg { n = n*(-1.0) }
+        if n < f64::MIN_POSITIVE {
+            return Fraction::new(0, 1)
+        }
+        if (n - n.round()).abs() < f64::EPSILON {
+            return Fraction::new(n.round() as i64, 1)
+        }
+        let mut a : isize = 0;
+        let mut b : isize = 1;
+        let mut c : isize = n.ceil() as isize;
+        let mut d : isize = 1;
+        let aux1 = isize::max_value()/2;
+        while c < aux1  && d < aux1 {
+            let aux2 : f64 = (a as f64 + c as f64)/(b as f64 + d as f64);
+            if (n - aux2).abs() < f64::EPSILON { break }
+            if n > aux2 {
+                a = a + c;
+                b = b + d;
+            } else {
+                c = a + c;
+                d = b + d;
+            }
+        }
+
+        if flag_neg {
+            Fraction::new(-(a+c) as i64, (b+d) as i64)
+        } else {
+            Fraction::new((a+c) as i64, (b+d) as i64)
+        }
     }
 }

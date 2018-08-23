@@ -1,6 +1,7 @@
 pub mod lang;
 pub mod equivalence;
 pub mod boolean;
+#[macro_use]
 pub mod numeric;
 pub mod ordering;
 pub mod conditionals;
@@ -34,9 +35,28 @@ pub fn env() -> EnvValues {
         "-"  => |args| numeric::calc('-', args),
         "*"  => |args| numeric::calc('*', args),
         "/"  => |args| numeric::calc('/', args),
-        "exact?"    => numeric::exact_qm,
-        "inexact?"  => numeric::inexact_qm,
-        "remainder" => numeric::remainder,
+        "exact?"      => numeric::exact_qm,
+        "inexact?"    => numeric::inexact_qm,
+        "number?"     => numeric::number_qm,
+        "remainder"   => numeric::remainder,
+        "numerator"   => numeric::numerator,
+        "denominator" => numeric::denominator,
+        "sqrt"        => call_float_fun!(sqrt),
+        "expt"        => call_float_fun!(sqrt),
+        "ceiling"     => call_float_fun!(ceil),
+        "floor"       => call_float_fun!(floor),
+        "truncate"    => call_float_fun!(trunc),
+        "round"       => call_float_fun!(round),
+        "exp"         => call_float_fun!(exp),
+        "log"         => call_float_fun!(ln, log),
+        "sin"         => call_float_fun!(sin),
+        "cos"         => call_float_fun!(cos),
+        "tan"         => call_float_fun!(tan),
+        "asin"        => call_float_fun!(asin),
+        "acos"        => call_float_fun!(acos),
+        "atan"        => call_float_fun!(atan, atan2),
+        "number->string" => numeric::number_string,
+        "string->number" => numeric::string_number,
 
         "<"  => ordering::lt,
         ">"  => ordering::gt,
