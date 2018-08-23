@@ -11,8 +11,8 @@ pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
         .into_iter();
 
     let init = match op_str {
-        '+' | '-' if args.len() == 1 => SExpr::integer(0),
-        '*' | '/' if args.len() == 1 => SExpr::integer(1),
+        '+' | '-' if args.len() == 1 => sint!(0),
+        '*' | '/' if args.len() == 1 => sint!(1),
         _ => args_iter.next().ok_or_else(|| SErr::WrongArgCount(1,0))?
     };
 
@@ -88,7 +88,7 @@ pub fn exact_qm(args: Args) -> SResult<SExpr> {
             x => bail!(TypeMismatch => "number", x)
         })?;
 
-    Ok(SExpr::boolean(result?))
+    Ok(sbool!(result?))
 }
 
 
@@ -96,8 +96,13 @@ pub fn inexact_qm(args: Args) -> SResult<SExpr> {
     Ok((!(exact_qm(args)?))?)
 }
 
+pub fn number_qm(args: Args) -> SResult<SExpr> {
+    let is_number = args.evaled()?.own_one()?.is_numeric();
+    Ok(sbool!(is_number))
+}
+
 pub fn remainder(args: Args) -> SResult<SExpr> {
     let (x, y) = args.evaled()?.own_two()?;
 
-    Ok(SExpr::integer(x.as_int()? % y.as_int()?))
+    Ok(sint!(x.as_int()? % y.as_int()?))
 }

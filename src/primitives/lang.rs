@@ -32,7 +32,7 @@ pub fn let_star(args: Args) -> SResult<SExpr> {
 }
 
 pub fn let_rec(args: Args) -> SResult<SExpr> {
-    let_generic(args, |expr, _, _| Ok(SExpr::lazy(expr.clone())))
+    let_generic(args, |expr, _, _| Ok(slazy!(expr.clone())))
 }
 
 pub fn quote(args: Args) -> SResult<SExpr> {
@@ -57,7 +57,7 @@ pub fn quasiquote(mut args: Args) -> SResult<SExpr> {
     if level == 1 {
         eval_unquoted(args)
     } else if level > 1 {
-        Ok(SExpr::quasiquote(vec![eval_unquoted(args)?]))
+        Ok(quasiquote!(eval_unquoted(args)?))
     } else {
         bail!("Wrong usage of quasiquote")
     }
@@ -80,7 +80,7 @@ pub fn unquote(args: Args) -> SResult<SExpr> {
         arg.eval(&env)
     } else if level > 0 {
         let args = Args::new_with_extra(vec![arg], Extra::QQLevel(level), &env);
-        Ok(SExpr::unquote(eval_unquoted(args)?))
+        Ok(unquote!(eval_unquoted(args)?))
     } else {
         bail!("Wrong usage of unquote")
     }

@@ -27,7 +27,7 @@ pub fn eq(args: Args) -> SResult<SExpr> {
 
 fn compare<F>(args: Args, op: F) -> SResult<SExpr>
 where F: Fn(&SExpr,&SExpr) -> bool {
-    Ok(SExpr::boolean(check(&args, op, &args.env)?))
+    Ok(sbool!(check(&args, op, &args.env)?))
 }
 
 fn check<F>(xs: &[SExpr], op: F, env: &EnvRef) -> SResult<bool>
@@ -39,7 +39,7 @@ where F: Fn(&SExpr,&SExpr) -> bool {
             let x2 = xs[1].eval(env)?;
             let rest = &xs[2..];
             if !(x1.is_numeric() && x2.is_numeric()) {
-                bail!(TypeMismatch => "number", SExpr::List(vec![x1, x2]))
+                bail!(TypeMismatch => "number", slist![x1, x2])
             }
 
             Ok(op(&x1, &x2) && check(rest, op, env)?)

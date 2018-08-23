@@ -56,8 +56,8 @@ pub fn case(args: Args) -> SResult<SExpr> {
         .skip(1)
         .map(|clause| {
             if let SExpr::List(xs) = clause {
-                let test = SExpr::List(vec![SExpr::symbol("eqv?"), xs[0].clone(), test.clone()]);
-                Ok(SExpr::List(vec![test, xs[1].clone()]))
+                let test = slist![ssymbol!("eqv?"), xs[0].clone(), test.clone()];
+                Ok(slist![test, xs[1].clone()])
             } else {
                 bail!(UnexpectedForm => clause)
             }
@@ -69,16 +69,16 @@ pub fn case(args: Args) -> SResult<SExpr> {
 
 pub fn or(args: Args) -> SResult<SExpr> {
     for expr in args.iter() {
-        if expr.eval(&args.env)?.to_bool() { return Ok(SExpr::boolean(true)) }
+        if expr.eval(&args.env)?.to_bool() { return Ok(sbool!(true)) }
     }
 
-    Ok(SExpr::boolean(false))
+    Ok(sbool!(false))
 }
 
 pub fn and(args: Args) -> SResult<SExpr> {
     for expr in args.iter() {
-        if !expr.eval(&args.env)?.to_bool() { return Ok(SExpr::boolean(false)) }
+        if !expr.eval(&args.env)?.to_bool() { return Ok(sbool!(false)) }
     }
 
-    Ok(SExpr::boolean(true))
+    Ok(sbool!(true))
 }

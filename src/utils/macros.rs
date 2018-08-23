@@ -37,7 +37,93 @@ macro_rules! ssymbol(
     ($e: expr) => {
         {
             use parser::SExpr;
+            use lexer::Token;
             SExpr::Atom(Token::Symbol($e.into()))
         }
+    }
+);
+
+
+#[macro_export]
+macro_rules! sbool(
+    ($e: expr) => {
+        {
+            use parser::SExpr;
+            use lexer::Token;
+            SExpr::Atom(Token::Boolean($e.into()))
+        }
+    }
+);
+
+
+#[macro_export]
+macro_rules! sint(
+    ($e: expr) => {
+        {
+            use parser::SExpr;
+            use lexer::Token;
+            SExpr::Atom(Token::Integer($e.into()))
+        }
+    }
+);
+
+
+#[macro_export]
+macro_rules! sstr(
+    ($e: expr) => {
+        {
+            use parser::SExpr;
+            use lexer::Token;
+            SExpr::Atom(Token::Str($e.into()))
+        }
+    }
+);
+
+#[macro_export]
+macro_rules! schr(
+    ($e: expr) => {
+        {
+            use parser::SExpr;
+            use lexer::Token;
+            SExpr::Atom(Token::Chr($e.into()))
+        }
+    }
+);
+
+#[macro_export]
+macro_rules! slazy(
+    ($e: expr) => {
+        {
+            use parser::SExpr;
+            SExpr::Lazy($e.into())
+        }
+    }
+);
+
+#[macro_export]
+macro_rules! quasiquote(
+    ($expr: expr) => {
+        slist![ssymbol!("quasiquote"), $expr]
+    }
+);
+
+#[macro_export]
+macro_rules! quote(
+    ($expr: expr) => {
+        slist![ssymbol!("quote"), $expr]
+    }
+);
+
+#[macro_export]
+macro_rules! unquote(
+    ($expr: expr) => {
+        slist![ssymbol!("unquote"), $expr]
+    }
+);
+
+#[macro_export]
+macro_rules! unquote_splicing(
+    ($expr: expr) => {
+        slist![ssymbol!("unquote-splicing"), $expr]
     }
 );

@@ -16,7 +16,7 @@ fn get_path_from_args(args: Args) -> SResult<String> {
 }
 
 pub fn file_exists_qm(args: Args) -> SResult<SExpr> {
-    Ok(SExpr::boolean(Path::new(&get_path_from_args(args)?).exists()))
+    Ok(sbool!(Path::new(&get_path_from_args(args)?).exists()))
 }
 
 
@@ -27,12 +27,12 @@ pub fn delete_file(args: Args) -> SResult<SExpr> {
 
 pub fn get_environment_variable(args: Args) -> SResult<SExpr> {
     let var = env::var(get_path_from_args(args)?)?;
-    Ok(SExpr::str_owned(var))
+    Ok(sstr!(var))
 }
 
 pub fn get_environment_variables(_args: Args) -> SResult<SExpr> {
     let vars = env::vars()
-        .map(|(key, val)| SExpr::dottedlist(vec![SExpr::str_owned(key)], SExpr::str_owned(val)))
+        .map(|(key, val)| sdottedlist![sstr!(key); sstr!(val)])
         .collect();
 
     Ok(SExpr::List(vars))
@@ -66,5 +66,5 @@ pub fn system_star(args: Args) -> SResult<SExpr> {
         .code()
         .unwrap_or(1);
 
-    Ok(SExpr::integer(status as i64))
+    Ok(sint!(status as i64))
 }

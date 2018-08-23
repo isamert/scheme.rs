@@ -67,7 +67,7 @@ impl ProcedureData {
         let body_expr = if body.len() == 1 {
             body.into_iter().next().unwrap()
         } else {
-            let mut body_vec = vec![SExpr::symbol("begin")];
+            let mut body_vec = vec![ssymbol!("begin")];
             body_vec.append(&mut body);
             SExpr::List(body_vec)
         };

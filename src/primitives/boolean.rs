@@ -7,7 +7,7 @@ pub fn not(args: Args) -> SResult<SExpr> {
         .own_one()?
         .to_bool();
 
-    Ok(SExpr::boolean(!boolean))
+    Ok(sbool!(!boolean))
 }
 
 pub fn boolean_qm(args: Args) -> SResult<SExpr> {
@@ -15,7 +15,7 @@ pub fn boolean_qm(args: Args) -> SResult<SExpr> {
         .own_one()?
         .is_boolean();
 
-    Ok(SExpr::boolean(is_bool))
+    Ok(sbool!(is_bool))
 }
 
 // boolean=?
@@ -38,9 +38,9 @@ pub fn boolean_eq_qm(args: Args) -> SResult<SExpr> {
         if !b_is_bool {
             bail!(TypeMismatch => "boolean", b)
         } else if b_evaled != control {
-            return Ok(SExpr::boolean(false))
+            return Ok(sbool!(false))
         }
     }
 
-    Ok(SExpr::boolean(true))
+    Ok(sbool!(true))
 }

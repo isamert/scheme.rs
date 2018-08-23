@@ -28,7 +28,7 @@ macro_rules! call_check_fn(
                 let is = port_expr.as_port()?
                     .$fn();
 
-                Ok(SExpr::boolean(is))
+                Ok(sbool!(is))
             })
         }
     };
@@ -133,17 +133,17 @@ pub fn read(args: Args) -> SResult<SExpr> {
 pub fn read_line(args: Args) -> SResult<SExpr> {
     // I couldn't understand why it can't infer the type of x.
     let x: SResult<String> = call_read_fn!(args, read_line);
-    Ok(SExpr::str_(x?.trim_right_matches(|c| c == '\n')))
+    Ok(sstr!(x?.trim_right_matches(|c| c == '\n')))
 }
 
 pub fn read_char(args: Args) -> SResult<SExpr> {
     let x: SResult<char> = call_read_fn!(args, read_char);
-    Ok(SExpr::chr(x?))
+    Ok(schr!(x?))
 }
 
 pub fn read_u8(args: Args) -> SResult<SExpr> {
     let x: SResult<u8> = call_read_fn!(args, read_u8);
-    Ok(SExpr::integer(i64::from(x?)))
+    Ok(sint!(i64::from(x?)))
 }
 
 pub fn read_all(args: Args) -> SResult<SExpr> {
@@ -154,10 +154,10 @@ pub fn read_all(args: Args) -> SResult<SExpr> {
 
             if port.is_textual() && port.is_input() {
                 let (_size, string) = port.read_all_str()?;
-                Ok(SExpr::str_owned(string))
+                Ok(sstr!(string))
             } else if port.is_binary() && port.is_input() {
                 let (_size, u8s) = port.read_all_u8()?;
-                Ok(SExpr::List(u8s.into_iter().map(|u| SExpr::integer(i64::from(u))).collect()))
+                Ok(SExpr::List(u8s.into_iter().map(|u| sint!(i64::from(u))).collect()))
             } else {
                 bail!(TypeMismatch => "a textual or binary input port", SExpr::Port(port.clone()))
             }

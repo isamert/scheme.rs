@@ -107,7 +107,7 @@ pub fn null_qm(args: Args) -> SResult<SExpr> {
         _ => false
     };
 
-    Ok(SExpr::boolean(result))
+    Ok(sbool!(result))
 }
 
 pub fn pair_qm(args: Args) -> SResult<SExpr> {
@@ -115,7 +115,7 @@ pub fn pair_qm(args: Args) -> SResult<SExpr> {
         .own_one()?
         .is_pair();
 
-    Ok(SExpr::boolean(result))
+    Ok(sbool!(result))
 }
 
 pub fn list_qm(args: Args) -> SResult<SExpr> {
@@ -123,5 +123,5 @@ pub fn list_qm(args: Args) -> SResult<SExpr> {
         .own_one()?
         .is_proper_list();
 
-    Ok(SExpr::boolean(result))
+    Ok(sbool!(result))
 }

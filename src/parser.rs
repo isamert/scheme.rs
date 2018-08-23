@@ -55,7 +55,7 @@ impl Not for SExpr {
     type Output = SResult<SExpr>;
     fn not(self) -> SResult<SExpr> {
         match self {
-            SExpr::Atom(Token::Boolean(x)) => Ok(SExpr::boolean(!x)),
+            SExpr::Atom(Token::Boolean(x)) => Ok(sbool!(!x)),
             _ => bail!(TypeMismatch => "boolean", self)
         }
     }
@@ -80,47 +80,6 @@ impl<'a> From<&'a mut SExpr> for SExpr {
 
 #[allow(dead_code)]
 impl SExpr {
-    pub fn symbol(x: &str) -> SExpr {
-        SExpr::Atom(Token::Symbol(x.to_string()))
-    }
-
-    pub fn integer(x: i64) -> SExpr {
-        SExpr::Atom(Token::Integer(x))
-    }
-
-    pub fn float(x: f64) -> SExpr {
-        SExpr::Atom(Token::Float(x))
-    }
-
-    pub fn boolean(x: bool) -> SExpr {
-        SExpr::Atom(Token::Boolean(x))
-    }
-
-    pub fn chr(x: char) -> SExpr {
-        SExpr::Atom(Token::Chr(x))
-    }
-
-    pub fn str_(x: &str) -> SExpr {
-        SExpr::Atom(Token::Str(x.to_string()))
-    }
-
-    pub fn str_owned(x: String) -> SExpr {
-        SExpr::Atom(Token::Str(x))
-    }
-
-    pub fn quasiquote(mut args: SExprs) -> SExpr {
-        args.insert(0, SExpr::symbol("quasiquote"));
-        SExpr::List(args)
-    }
-
-    pub fn quote(sexpr: SExpr) -> SExpr {
-        SExpr::List(vec![SExpr::symbol("quote"), sexpr])
-    }
-
-    pub fn unquote(sexpr: SExpr) -> SExpr {
-        SExpr::List(vec![SExpr::symbol("unquote"), sexpr])
-    }
-
     pub fn lazy(x: SExpr) -> SExpr {
         SExpr::Lazy(Box::new(x))
     }
@@ -323,7 +282,7 @@ where I: Iterator<Item=Token> {
             // Check if empty list
             if iter.peek() == Some(&Token::RParen) {
                 iter.next(); // Consume RParen
-                return Ok(SExpr::List(vec![]));
+                return Ok(slist![]);
             }
 
             let mut head: SExprs = vec![];
@@ -359,19 +318,19 @@ where I: Iterator<Item=Token> {
         },
         Some(&Token::Quote) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("quote"), parse_single(iter)?]))
+            Ok(quote!(parse_single(iter)?))
         },
         Some(&Token::UnQuote) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("unquote"), parse_single(iter)?]))
+            Ok(unquote!(parse_single(iter)?))
         },
         Some(&Token::QuasiQuote) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("quasiquote"), parse_single(iter)?]))
+            Ok(quasiquote!(parse_single(iter)?))
         },
         Some(&Token::UnQuoteSplicing) => {
             iter.next();
-            Ok(SExpr::List(vec![SExpr::symbol("unquote-splicing"), parse_single(iter)?]))
+            Ok(unquote_splicing!(parse_single(iter)?))
         },
         Some(_) => {
             let y = iter.next().unwrap();

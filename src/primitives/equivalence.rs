@@ -34,7 +34,7 @@ pub fn equal_qm(args: Args) -> SResult<SExpr> {
 fn equality<F>(args: Args, mut non_atom: F) -> SResult<SExpr>
 where F: (FnMut(&Args) -> SResult<bool>) {
     if args.len() < 2 {
-        return Ok(SExpr::boolean(true));
+        return Ok(sbool!(true));
     }
 
     let result = match (&args[0], &args[1]) {
@@ -49,5 +49,5 @@ where F: (FnMut(&Args) -> SResult<bool>) {
         }
     };
 
-    Ok(SExpr::boolean(result))
+    Ok(sbool!(result))
 }
