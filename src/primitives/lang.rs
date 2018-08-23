@@ -23,6 +23,32 @@ pub fn lambda(args: Args) -> SResult<SExpr> {
     ProcedureData::new_compound(params, body, &env)
 }
 
+pub fn apply(args: Args) -> SResult<SExpr> {
+    let env = args.env();
+    let evaled = args.evaled()?;
+    let (proc, arg_list) = if evaled.len() == 2 {
+         let (proc, arg_list_) = evaled.own_two()?;
+         let arg_list = arg_list_.into_list()?;
+         (proc, arg_list)
+    } else if evaled.len() > 2 {
+        let (proc, list) = evaled.own_one_rest()?;
+        let mut iter = list.into_iter().peekable();
+        let mut arg_list = vec![];
+        while let Some(x) = iter.next() {
+            if iter.peek().is_some() {
+                arg_list.push(x);
+            } else { // last elem
+                arg_list.append(&mut x.into_list()?);
+            }
+        };
+        (proc, arg_list)
+    } else {
+        bail!(WrongArgCount => 2 as usize, evaled.len())
+    };
+
+    proc.as_proc()?.apply(Args::new(arg_list, &env))
+}
+
 pub fn let_(args: Args) -> SResult<SExpr> {
     let_generic(args, |expr, _, parent_env| expr.eval(parent_env))
 }

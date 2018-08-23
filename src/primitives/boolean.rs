@@ -2,14 +2,6 @@ use parser::SExpr;
 use evaluator::Args;
 use serr::{SErr, SResult};
 
-pub fn not(args: Args) -> SResult<SExpr> {
-    let boolean = args.evaled()?
-        .own_one()?
-        .to_bool();
-
-    Ok(sbool!(!boolean))
-}
-
 pub fn boolean_qm(args: Args) -> SResult<SExpr> {
     let is_bool = args.evaled()?
         .own_one()?

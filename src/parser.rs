@@ -218,6 +218,13 @@ impl SExpr {
         }
     }
 
+    pub fn as_proc(&self) -> SResult<&ProcedureData> {
+        match self {
+            SExpr::Procedure(x) => Ok(x),
+            x => bail!(TypeMismatch => "procedure", x)
+        }
+    }
+
     // Transforms
     pub fn into_symbol(self) -> SResult<String> {
         match self {

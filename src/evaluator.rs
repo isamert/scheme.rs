@@ -82,7 +82,7 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
                 let mut iter = xs.into_iter();
                 let op = iter.next()
                     .ok_or_else(|| SErr::new_unexpected_form(&SExpr::List(vec![])))?;
-                let args = Args::new(iter.collect(), &env);
+                let mut args = Args::new(iter.collect(), &env);
 
                 match op {
                     // Need to handle control structres like if and begin
@@ -106,10 +106,10 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
                         }
                     },
                     SExpr::Atom(Token::Symbol(ref sym)) if sym == "begin" => {
-                        sexpr = args.eval()?
-                            .into_iter()
-                            .last()
-                            .unwrap_or_else(|| SExpr::Unspecified);
+                        let last = args.pop()
+                            .ok_or_else(|| SErr::new_generic("Bodyless `begin`"))?;
+                        args.eval()?; // eval all except the last one
+                        sexpr = last;
                     },
                     SExpr::Atom(Token::Symbol(symbol)) => {
                         let procedure = args.env

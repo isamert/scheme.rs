@@ -24,6 +24,10 @@ use parser::parse;
 fn main() {
     let args = args().collect::<Vec<_>>();
     let env = Env::with_values(Env::null(), primitives::env()).into_ref();
+    match primitives::load_prelude(&env) {
+        Err(e) => println!("{}", e),
+        _ => (),
+    }
 
     if args.len() == 1 {
         repl::run(&env);

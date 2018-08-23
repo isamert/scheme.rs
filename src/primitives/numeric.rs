@@ -102,12 +102,19 @@ pub fn number_qm(args: Args) -> SResult<SExpr> {
     Ok(sbool!(is_number))
 }
 
+pub fn modulo(args: Args) -> SResult<SExpr> {
+    let (x_, y_) = args.evaled()?.own_two()?;
+    let x = x_.as_int()?;
+    let y = y_.as_int()?;
+
+    Ok(sint!((x % y + y) % y))
+}
+
 pub fn remainder(args: Args) -> SResult<SExpr> {
     let (x, y) = args.evaled()?.own_two()?;
 
-    Ok(sint!(x.as_int()? % y.as_int()?))
+    Ok(sint!((x.as_int()? % y.as_int()?)))
 }
-
 
 pub fn numerator(args: Args) -> SResult<SExpr> {
     let num = args.evaled()?.own_one()?;

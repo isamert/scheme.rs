@@ -8,14 +8,27 @@ pub mod conditionals;
 pub mod list;
 pub mod io;
 pub mod system;
+pub mod prelude;
 
-use env::EnvValues;
+use primitives::prelude::PRELUDE;
+use env::{EnvRef, EnvValues};
+use lexer::tokenize;
+use parser::parse;
+use serr::SResult;
+
+pub fn load_prelude(env: &EnvRef) -> SResult<()> {
+    for sexpr in parse(tokenize(&mut PRELUDE.to_string().chars().into_iter().peekable()))? {
+        sexpr.eval(&env)?;
+    }
+    Ok(())
+}
 
 pub fn env() -> EnvValues {
     environment! {
         "define"      => lang::define,
         "set!"        => lang::set,
         "lambda"      => lang::lambda,
+        "apply"       => lang::apply,
         "let"         => lang::let_,
         "let*"        => lang::let_star,
         "letrec"      => lang::let_rec,
@@ -27,7 +40,6 @@ pub fn env() -> EnvValues {
         "eq?"    => equivalence::eq_qm,
         "equal?" => equivalence::equal_qm,
 
-        "not"       => boolean::not,
         "boolean?"  => boolean::boolean_qm,
         "boolean=?" => boolean::boolean_eq_qm,
 
@@ -39,6 +51,7 @@ pub fn env() -> EnvValues {
         "inexact?"    => numeric::inexact_qm,
         "number?"     => numeric::number_qm,
         "remainder"   => numeric::remainder,
+        "modulo"      => numeric::modulo,
         "numerator"   => numeric::numerator,
         "denominator" => numeric::denominator,
         "sqrt"        => call_float_fun!(sqrt),
@@ -69,12 +82,10 @@ pub fn env() -> EnvValues {
         "and"  => conditionals::and,
         "or"   => conditionals::or,
 
-        "list"   => list::list,
         "cons"   => list::cons,
         "car"    => list::car,
         "cdr"    => list::cdr,
         "append" => list::append,
-        "null?"  => list::null_qm,
         "pair?"  => list::pair_qm,
         "list?"  => list::list_qm,
 

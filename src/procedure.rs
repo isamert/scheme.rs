@@ -87,6 +87,13 @@ impl ProcedureData {
     pub fn new_primitive(fun: PrimitiveProcedure) -> SExpr {
         SExpr::Procedure(ProcedureData::Primitive(PrimitiveData { fun }))
     }
+
+    pub fn apply(&self, args: Args) -> SResult<SExpr> {
+        match self {
+            ProcedureData::Primitive(x) => x.apply(args),
+            ProcedureData::Compound(x) => x.apply(args),
+        }
+    }
 }
 
 impl CompoundData {
@@ -98,13 +105,13 @@ impl CompoundData {
             },
             Param::Fixed(ref xs) => {
                 if xs.len() != args.len() {
-                    bail!(WrongArgCount => args.len(), xs.len())
+                    bail!(WrongArgCount => xs.len(), args.len())
                 }
                 inner_env.pack(xs.as_slice(), args.eval()?);
             },
             Param::Multi(ref xs, ref y) => {
                 if args.len() < xs.len() {
-                    bail!(WrongArgCount => args.len(), xs.len())
+                    bail!(WrongArgCount => xs.len(), args.len())
                 }
 
                 let mut evaled_args = args.eval()?.into_iter();
@@ -118,6 +125,11 @@ impl CompoundData {
         };
 
         Ok(inner_env.into_ref())
+    }
+
+    pub fn apply(&self, args: Args) -> SResult<SExpr> {
+        let inner_env = self.build_env(args)?;
+        self.body.eval(&inner_env)
     }
 }
 

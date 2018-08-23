@@ -2,10 +2,6 @@ use parser::SExpr;
 use evaluator::Args;
 use serr::{SErr, SResult};
 
-pub fn list(args: Args) -> SResult<SExpr> {
-    Ok(SExpr::List(args.eval()?))
-}
-
 pub fn cons(args: Args) -> SResult<SExpr> {
     let (x, xs) = args.evaled()?
         .own_two()?;
@@ -96,18 +92,6 @@ pub fn append(args: Args) -> SResult<SExpr> {
 
     // Just for satisfying compiler
     Ok(SExpr::Unspecified)
-}
-
-pub fn null_qm(args: Args) -> SResult<SExpr> {
-    let x = args.evaled()?
-        .own_one()?;
-
-    let result = match x {
-        SExpr::List(ref ys) if ys.is_empty() => true,
-        _ => false
-    };
-
-    Ok(sbool!(result))
 }
 
 pub fn pair_qm(args: Args) -> SResult<SExpr> {
