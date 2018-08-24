@@ -36,6 +36,9 @@ pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
         let result = match (acc?, x) {
             (Atom(Integer(a)), Atom(Integer(b))) => {
                 // Like it isnt ugly already
+                if b == 0 {
+                    serr!(DivisionByZero)
+                }
                 if op_str == '/' && a % b != 0 {
                     Atom(Fraction(fraction::Fraction::new(a,b)))
                 } else {

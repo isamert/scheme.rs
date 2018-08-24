@@ -204,10 +204,6 @@ impl Args {
         Ok(Args::new_with_extra(self.eval()?, self.extra, &self.env))
     }
 
-    pub fn len(&self) -> usize {
-        self.vec.len()
-    }
-
     pub fn own_one(self) -> SResult<SExpr> {
         let max = 1;
         if self.len() > max {

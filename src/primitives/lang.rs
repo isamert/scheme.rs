@@ -46,7 +46,13 @@ pub fn apply(args: Args) -> SResult<SExpr> {
         bail!(WrongArgCount => 2 as usize, evaled.len())
     };
 
-    proc.as_proc()?.apply(Args::new(arg_list, &env))
+    // Because the proc will try to reevaluate the arguments,
+    // need to quote them before calling proc.
+    let args_quoted = arg_list.into_iter()
+        .map(|x| quote!(x))
+        .collect();
+
+    proc.as_proc()?.apply(Args::new(args_quoted, &env))
 }
 
 pub fn let_(args: Args) -> SResult<SExpr> {
