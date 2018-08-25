@@ -36,7 +36,7 @@ pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
         let result = match (acc?, x) {
             (Atom(Integer(a)), Atom(Integer(b))) => {
                 // Like it isnt ugly already
-                if b == 0 {
+                if op_str == '/' && b == 0 {
                     serr!(DivisionByZero)
                 }
                 if op_str == '/' && a % b != 0 {
@@ -79,30 +79,6 @@ pub fn calc(op_str: char, args: Args) -> SResult<SExpr> {
     };
 
     Ok(fixed_result)
-}
-
-pub fn exact_qm(args: Args) -> SResult<SExpr> {
-    let result = args.eval()?
-        .get(0)
-        .ok_or_else(|| SErr::WrongArgCount(1, 0))
-        .map(|x| match x {
-            SExpr::Atom(Token::Integer(_)) |
-                SExpr::Atom(Token::Fraction(_)) => Ok(true),
-            SExpr::Atom(Token::Float(_)) => Ok(false),
-            x => bail!(TypeMismatch => "number", x)
-        })?;
-
-    Ok(sbool!(result?))
-}
-
-
-pub fn inexact_qm(args: Args) -> SResult<SExpr> {
-    Ok((!(exact_qm(args)?))?)
-}
-
-pub fn number_qm(args: Args) -> SResult<SExpr> {
-    let is_number = args.evaled()?.own_one()?.is_numeric();
-    Ok(sbool!(is_number))
 }
 
 pub fn modulo(args: Args) -> SResult<SExpr> {

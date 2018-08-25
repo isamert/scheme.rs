@@ -19,21 +19,6 @@ fn get_path_from_args(args: Args) -> SResult<String> {
         .into_str()
 }
 
-macro_rules! call_check_fn(
-    ($args: ident, $fn: ident) => {
-        {
-            $args.get(0)
-            .ok_or_else(|| SErr::WrongArgCount(1, 0))?
-            .eval_ref(&$args.env, |port_expr| {
-                let is = port_expr.as_port()?
-                    .$fn();
-
-                Ok(sbool!(is))
-            })
-        }
-    };
-);
-
 macro_rules! call_read_fn(
     ($args: ident, $fn: ident) => {
         {
@@ -77,22 +62,6 @@ macro_rules! call_write_fn(
 //
 // Functions
 //
-pub fn input_port_qm(args: Args) -> SResult<SExpr> {
-    call_check_fn!(args, is_input)
-}
-
-pub fn output_port_qm(args: Args) -> SResult<SExpr> {
-    call_check_fn!(args, is_output)
-}
-
-pub fn textual_port_qm(args: Args) -> SResult<SExpr> {
-    call_check_fn!(args, is_textual)
-}
-
-pub fn binary_port_qm(args: Args) -> SResult<SExpr> {
-    call_check_fn!(args, is_binary)
-}
-
 pub fn open_input_file(args: Args) -> SResult<SExpr> {
     Ok(SExpr::Port(PortData::new_textual_file_input(&get_path_from_args(args)?)?))
 }

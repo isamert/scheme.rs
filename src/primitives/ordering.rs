@@ -38,8 +38,10 @@ where F: Fn(&SExpr,&SExpr) -> bool {
             let x1 = xs[0].eval(env)?;
             let x2 = xs[1].eval(env)?;
             let rest = &xs[2..];
-            if !(x1.is_numeric() && x2.is_numeric()) {
-                bail!(TypeMismatch => "number", slist![x1, x2])
+            if !((x1.is_numeric() && x2.is_numeric())
+                 || (x1.is_str() && x2.is_str())
+                 || (x1.is_chr() && x2.is_chr())) {
+                bail!(TypeMismatch => "number or string or char", slist![x1, x2])
             }
 
             Ok(op(&x1, &x2) && check(rest, op, env)?)

@@ -1,14 +1,16 @@
 pub mod lang;
 pub mod equivalence;
-pub mod boolean;
 #[macro_use]
 pub mod numeric;
 pub mod ordering;
 pub mod conditionals;
 pub mod list;
+#[macro_use]
+pub mod string;
 pub mod io;
 pub mod system;
 pub mod prelude;
+pub mod meta;
 
 use primitives::prelude::PRELUDE;
 use env::{EnvRef, EnvValues};
@@ -25,6 +27,8 @@ pub fn load_prelude(env: &EnvRef) -> SResult<()> {
 
 pub fn env() -> EnvValues {
     environment! {
+        "typeof"  => meta::type_of,
+
         "define"      => lang::define,
         "set!"        => lang::set,
         "lambda"      => lang::lambda,
@@ -40,16 +44,10 @@ pub fn env() -> EnvValues {
         "eq?"    => equivalence::eq_qm,
         "equal?" => equivalence::equal_qm,
 
-        "boolean?"  => boolean::boolean_qm,
-        "boolean=?" => boolean::boolean_eq_qm,
-
         "+"  => |args| numeric::calc('+', args),
         "-"  => |args| numeric::calc('-', args),
         "*"  => |args| numeric::calc('*', args),
         "/"  => |args| numeric::calc('/', args),
-        "exact?"      => numeric::exact_qm,
-        "inexact?"    => numeric::inexact_qm,
-        "number?"     => numeric::number_qm,
         "remainder"   => numeric::remainder,
         "modulo"      => numeric::modulo,
         "numerator"   => numeric::numerator,
@@ -86,8 +84,19 @@ pub fn env() -> EnvValues {
         "car"    => list::car,
         "cdr"    => list::cdr,
         "append" => list::append,
-        "pair?"  => list::pair_qm,
-        "list?"  => list::list_qm,
+
+        "string-upcase"      => call_str_fun!(to_uppercase),
+        "string-downcase"    => call_str_fun!(to_lowercase),
+        "string-length"      => call_str_fun!(len),
+        "char-upcase"        => call_chr_fun!(to_uppercase !),
+        "char-downcase"      => call_chr_fun!(to_lowercase !),
+        "char-upper-case?"   => call_chr_fun!(is_uppercase),
+        "char-lower-case?"   => call_chr_fun!(is_lowercase),
+        "char-alphabetic?"   => call_chr_fun!(is_alphabetic),
+        "char-numeric?"      => call_chr_fun!(is_numeric),
+        "char-alphanumeric?" => call_chr_fun!(is_alphanumeric),
+        "char-whitespace?"   => call_chr_fun!(is_whitespace),
+        "string-copy"        => string::string_copy,
 
         "load"         => system::load,
         "file-exists?" => system::file_exists_qm,
@@ -100,10 +109,6 @@ pub fn env() -> EnvValues {
         "open-binary-output-file" => io::open_binary_output_file,
         "open-input-file"  => io::open_input_file,
         "open-output-file" => io::open_output_file,
-        "output-port?"     => io::input_port_qm,
-        "input-port?"      => io::output_port_qm,
-        "textual-port?"    => io::textual_port_qm,
-        "binary-port?"     => io::binary_port_qm,
         "read"             => io::read,
         "read-u8"          => io::read_u8,
         "read-line"        => io::read_line,

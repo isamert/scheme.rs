@@ -79,7 +79,6 @@ impl<'a> From<&'a mut SExpr> for SExpr {
     }
 }
 
-
 impl From<i64> for SExpr {
     fn from(i: i64) -> Self {
         SExpr::Atom(Token::Integer(i))
@@ -95,6 +94,30 @@ impl From<f64> for SExpr {
 impl From<Fraction> for SExpr {
     fn from(i: Fraction) -> Self {
         SExpr::Atom(Token::Fraction(i))
+    }
+}
+
+impl From<char> for SExpr {
+    fn from(c: char) -> Self {
+        SExpr::Atom(Token::Chr(c))
+    }
+}
+
+impl From<bool> for SExpr {
+    fn from(b: bool) -> Self {
+        SExpr::Atom(Token::Boolean(b))
+    }
+}
+
+impl From<usize> for SExpr {
+    fn from(u: usize) -> Self {
+        SExpr::Atom(Token::Integer(u as i64))
+    }
+}
+
+impl From<String> for SExpr {
+    fn from(s: String) -> Self {
+        SExpr::Atom(Token::Str(s))
     }
 }
 
@@ -144,6 +167,13 @@ impl SExpr {
     pub fn is_lazy(&self) -> bool {
         match self {
             SExpr::Lazy(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_integer(&self) -> bool {
+        match self {
+            SExpr::Atom(Token::Integer(_)) => true,
             _ => false
         }
     }

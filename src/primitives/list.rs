@@ -93,19 +93,3 @@ pub fn append(args: Args) -> SResult<SExpr> {
     // Just for satisfying compiler
     Ok(SExpr::Unspecified)
 }
-
-pub fn pair_qm(args: Args) -> SResult<SExpr> {
-    let result = args.evaled()?
-        .own_one()?
-        .is_pair();
-
-    Ok(sbool!(result))
-}
-
-pub fn list_qm(args: Args) -> SResult<SExpr> {
-    let result = args.evaled()?
-        .own_one()?
-        .is_proper_list();
-
-    Ok(sbool!(result))
-}
