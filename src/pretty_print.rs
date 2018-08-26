@@ -46,7 +46,6 @@ impl fmt::Display for SExpr {
             SExpr::Port(_port) => fmt.write_str("#<a port>"),
             SExpr::DottedList(xs, sexpr) => fmt.write_str(&format!("({} . {})", str_list(xs), sexpr)),
             SExpr::Lazy(x) => fmt.write_str(&format!("Lazy {}", x)),
-            SExpr::Vector(xs) => fmt.write_str(&format!("({})", str_list(xs))),
             SExpr::List(xs) => fmt.write_str(&format!("({})", str_list(xs))),
         };
         Ok(())

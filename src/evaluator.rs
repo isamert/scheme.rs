@@ -52,7 +52,7 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
                     _ => return Ok(result)
                 };
             },
-            x@SExpr::Atom(_) | x@SExpr::Procedure(_) | x@SExpr::Vector(_)
+            x@SExpr::Atom(_) | x@SExpr::Procedure(_)
                 | x@SExpr::Port(_) | x@SExpr::Unspecified => {
                 return Ok(x)
             },
@@ -124,7 +124,6 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
                                     sexpr = *x.body;
                                 }
                             },
-                            // FIXME: SExpr::Lazy(p) => call(p.eval(&args.env)?, args),
                             _ => bail!(NotAProcedure => procedure)
                         };
                     },
@@ -238,6 +237,20 @@ impl Args {
         let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 1))?;
         let x3 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 2))?;
         Ok((x1,x2,x3))
+    }
+
+    pub fn own_four(self) -> SResult<(SExpr, SExpr, SExpr, SExpr)> {
+        let max = 4;
+        if self.len() > max {
+            bail!(WrongArgCount => max, self.len())
+        }
+
+        let mut iter = self.vec.into_iter();
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 0))?;
+        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 1))?;
+        let x3 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 2))?;
+        let x4 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 3))?;
+        Ok((x1,x2,x3,x4))
     }
 
     pub fn own_one_rest(self) -> SResult<(SExpr, SExprs)> {

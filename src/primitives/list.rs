@@ -60,6 +60,35 @@ pub fn cdr(args: Args) -> SResult<SExpr> {
     Ok(result)
 }
 
+pub fn list_copy(args: Args) -> SResult<SExpr> {
+    let evaled = args.evaled()?;
+    let list = if evaled.len() == 1 {
+        evaled.own_one()?.into_list()?
+    } else if evaled.len() == 2 {
+        let (list_, start_) = evaled.own_two()?;
+        let list = list_.into_list()?;
+        let start = start_.into_int()? as usize;
+
+        list.into_iter()
+            .skip(start)
+            .collect()
+    } else if evaled.len() == 3 {
+        let (list_, start_, end_) = evaled.own_three()?;
+        let list = list_.into_list()?;
+        let start = start_.into_int()? as usize;
+        let end = end_.into_int()? as usize;
+
+        list.into_iter()
+            .skip(start)
+            .take(end-start)
+            .collect()
+    } else {
+        bail!(WrongArgCount => 3 as usize, evaled.len())
+    };
+
+    Ok(SExpr::List(list))
+}
+
 pub fn append(args: Args) -> SResult<SExpr> {
     let len = args.len();
     if len == 1 {

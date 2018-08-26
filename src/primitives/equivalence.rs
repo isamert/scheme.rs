@@ -13,7 +13,6 @@ pub fn eqv_qm(args: Args) -> SResult<SExpr> {
         let result = match (&evaled[0], &evaled[1]) {
             (SExpr::Atom(x), SExpr::Atom(y)) => x == y,
             (SExpr::List(x), SExpr::List(y)) => x.is_empty() && y.is_empty(),
-            (SExpr::Vector(x), SExpr::Vector(y)) => x.is_empty() && y.is_empty(),
             (_,_) => false
         };
 

@@ -1,0 +1,59 @@
+* scheme.rs
+/scheme.rs/ is a simple Scheme interpreter that implements considerably large
+subset of R5RS with some extensions from R7RS. No dependencies to any other
+Rust packages.
+
+** Motivation
+I was studying about compilers and interpreters. On the other hand I was
+trying to learn Rust. So I combined those two and this project has emerged.
+There are thousands of fast, mature and feature-rich Scheme interpreters that
+you can use. This project is not intended to be usable in production altough
+I use it for my personal scripts and one can embed /scheme.rs/ into ones
+project to provide scripting facilities.
+
+** Examples
+#+BEGIN_SRC scheme
+;; FizzBuzz
+(define (fizzbuzz x y)
+  (println
+    (cond ((= (modulo x 15) 0 ) "FizzBuzz")
+          ((= (modulo x 3) 0 ) "Fizz")
+          ((= (modulo x 5) 0 ) "Buzz")
+          (else x)))
+
+    (if (< x y) (fizzbuzz (+ x 1) y)))
+
+(fizzbuzz 1 100)
+
+
+;; Read a line from file and print it
+(call-with-input-file "file.txt"
+  (λ (file)
+    (println (read-line file))))
+
+;; Tail recursive fibanocci
+(define (fib n)
+  (define (fib-helper a b n)
+    (if (= n 0) a
+        (fib-helper b (+ a b) (- n 1))))
+
+  (fib-helper 0 1 n))
+
+(display (fib 60)) ; prints 1548008755920
+#+END_SRC
+
+** Notes about implementation
+*** What is not included?
+- Functions that provide mutability
+- Hygienic macros (I may implement this in the future)
+- call-with-current-continuation and it's derivatives
+    - I don't of if it's possible to implement these functions only by using
+      Rust's stack.
+
+*** Proper tail recursion
+Tail calls are optimized but this implementation does not reflect the
+standard fully. Because there are no macros, functions like ~and~, ~or~,
+~cond~, ~let~ etc. are implemented as seperate procedures. So a procedure with
+~and~ in it's tail call may blow up the stack. Regardless of macro
+implementation, I may fix this in the future simply by expanding required
+functions before evaluation.

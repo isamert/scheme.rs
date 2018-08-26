@@ -6,36 +6,18 @@ use utils::fraction::Fraction;
 use lexer::Token;
 use procedure::ProcedureData;
 use evaluator;
-use env::EnvRef;
+use env::{EnvRef, VarName};
 use port::PortData;
 use expander::expand;
 use serr::{SErr, SResult};
 
 pub type SExprs = Vec<SExpr>;
 
-// TODO: needs huge refactoring
-/*
-#[derive(Debug, Clone)]
-pub struct Expr {
-    sexpr: SExpr,
-    data: usize
-}
-
-impl Deref for Expr {
-    type Target = SExpr;
-
-    fn deref(&self) -> &SExpr {
-        &self.sexpr
-    }
-}
-*/
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum SExpr {
     Atom(Token),
     List(SExprs),
     DottedList(Vec<SExpr>, Box<SExpr>),
-    Vector(Vec<SExpr>),
     Procedure(ProcedureData),
     Port(PortData),
     Lazy(Box<SExpr>),
@@ -254,6 +236,14 @@ impl SExpr {
             x => bail!(TypeMismatch => "procedure", x)
         }
     }
+
+    pub fn as_mut_string(&mut self) -> SResult<&mut String> {
+        match self {
+            SExpr::Atom(Token::Str(x)) => Ok(x),
+            x => bail!(TypeMismatch => "procedure", x)
+        }
+    }
+
 
     // Transforms
     pub fn into_symbol(self) -> SResult<String> {

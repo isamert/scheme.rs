@@ -59,3 +59,29 @@ pub fn string_copy(args: Args) -> SResult<SExpr> {
 
     Ok(sstr!(string))
 }
+
+pub fn string_append(args: Args) -> SResult<SExpr> {
+    let result = args.evaled()?
+        .into_iter()
+        .map(|x| x.into_str())
+        .collect::<SResult<Vec<String>>>()?
+        .join("");
+
+    Ok(sstr!(result))
+}
+
+pub fn string_replace_range_em(args: Args) -> SResult<SExpr> {
+    let env = args.env();
+    let (string_, start_, end_, replacement_) = args.own_four()?;
+
+    let start = start_.eval(&env)?.into_int()? as usize;
+    let end = end_.eval(&env)?.into_int()? as usize;
+    let replacement = replacement_.eval(&env)?.into_str()?;
+
+    string_.eval_mut_ref(&env, |string| {
+        string.as_mut_string()?
+            .replace_range(start..end, &replacement);
+
+        Ok(SExpr::Unspecified)
+    })
+}

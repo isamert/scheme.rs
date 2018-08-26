@@ -1,5 +1,4 @@
 pub const PRELUDE: &'static str = "
-
 ;; some functions are from:
 ;; https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours/Towards_a_Standard_Library
 
@@ -83,6 +82,8 @@ pub const PRELUDE: &'static str = "
 
 ;; lists
 (define (list . xs) xs)
+(define sublist list-copy)
+(define (list-ref s i) (list-copy s i (+ i 1)))
 (define (null? x) (if (eqv? x '()) #t #f))
 (define (sum . lst) (fold + 0 lst))
 (define (product . lst) (fold * 1 lst))
@@ -105,7 +106,37 @@ pub const PRELUDE: &'static str = "
 (define (assv obj alist)     (fold (mem-helper (curry eqv? obj) car) #f alist))
 (define (assoc obj alist)    (fold (mem-helper (curry equal? obj) car) #f alist))
 
-;; string, char
+
+(define (caar x) (car (car x)))
+(define (cadr x) (car (cdr x)))
+(define (cdar x) (cdr (car x)))
+(define (cddr x) (cdr (cdr x)))
+(define (caaar x) (car (car (car x))))
+(define (caadr x) (car (car (cdr x))))
+(define (cadar x) (car (cdr (car x))))
+(define (caddr x) (car (cdr (cdr x))))
+(define (cdaar x) (cdr (car (car x))))
+(define (cdadr x) (cdr (car (cdr x))))
+(define (cddar x) (cdr (cdr (car x))))
+(define (cdddr x) (cdr (cdr (cdr x))))
+(define (caaaar x) (car (car (car (car x)))))
+(define (caaadr x) (car (car (car (cdr x)))))
+(define (caadar x) (car (car (cdr (car x)))))
+(define (caaddr x) (car (car (cdr (cdr x)))))
+(define (cadaar x) (car (cdr (car (car x)))))
+(define (cadadr x) (car (cdr (car (cdr x)))))
+(define (caddar x) (car (cdr (cdr (car x)))))
+(define (cadddr x) (car (cdr (cdr (cdr x)))))
+(define (cdaaar x) (cdr (car (car (car x)))))
+(define (cdaadr x) (cdr (car (car (cdr x)))))
+(define (cdadar x) (cdr (car (cdr (car x)))))
+(define (cdaddr x) (cdr (car (cdr (cdr x)))))
+(define (cddaar x) (cdr (cdr (car (car x)))))
+(define (cddadr x) (cdr (cdr (car (cdr x)))))
+(define (cdddar x) (cdr (cdr (cdr (car x)))))
+(define (cddddr x) (cdr (cdr (cdr (cdr x)))))
+
+;; char
 ;; FIXME: Should I typecheck?
 (define char=? =)
 (define char<? <)
@@ -120,6 +151,7 @@ pub const PRELUDE: &'static str = "
 (define char-ci<=? (curry char-ci <=))
 (define char-ci>=? (curry char-ci >=))
 
+;; string
 (define string=? =)
 (define string<? <)
 (define string>? >)
@@ -134,5 +166,26 @@ pub const PRELUDE: &'static str = "
 (define string-ci>=? (curry string-ci >=))
 
 (define substring string-copy)
-(define (string-ref s i) (string-copy s i (+ i 1)))
+(define (string-ref s i) (convert-type 'chr (string-copy s i (+ i 1))))
+(define (string . xs) (convert-type 'str xs))
+
+(define symbol->string (curry convert-type 'str))
+(define string->symbol (curry convert-type 'symbol))
+(define string->list (curry convert-type 'list)) ;; FIXME: string->list string start end
+(define list->string (curry convert-type 'str))
+(define char->integer (curry convert-type 'integer))
+(define integer->char (curry convert-type 'chr))
+
+;; ports
+(define (println x) (display x) (newline))
+
+(define (call-with-output-file str proc)
+  (define f (open-output-file str))
+  (proc f)
+  (close-port f))
+
+(define (call-with-input-file str proc)
+  (define f (open-input-file str))
+  (proc f)
+  (close-port f))
 ";
