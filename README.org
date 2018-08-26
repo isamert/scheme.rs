@@ -42,6 +42,58 @@ project to provide scripting facilities.
 (display (fib 60)) ; prints 1548008755920
 #+END_SRC
 
+** List of functions
+Most of these functions are implemented in Rust.
+
+| define                | <                         | procedure?    | char<=?        |
+| set!                  | >                         | boolean?      | char>=?        |
+| λ                     | <=                        | char?         | char-ci=?      |
+| lambda                | >=                        | string?       | char-ci<?      |
+| apply                 | =                         | integer?      | char-ci>?      |
+| let                   | cond                      | exact?        | char-ci<=?     |
+| let*                  | case                      | inexact?      | char-ci>=?     |
+| letrec                | and                       | number?       | string=?       |
+| quote                 | or                        | pair?         | string<?       |
+| quasiquote            | cons                      | list?         | string>?       |
+| unquote               | car                       | output-port?  | string<=?      |
+| eqv?                  | cdr                       | input-port?   | string>=?      |
+| eq?                   | append                    | textual-port? | string-ci=?    |
+| equal?                | list-copy                 | binary-port?  | string-ci<?    |
+| +                     | string-append             | not           | string-ci>?    |
+| -                     | string-upcase             | zero?         | string-ci<=?   |
+| *                     | string-downcase           | positive?     | string-ci>=?   |
+| /                     | string-length             | negative?     | substring      |
+| remainder             | char-upcase               | odd?          | string-ref     |
+| modulo                | char-downcase             | even?         | string         |
+| numerator             | char-upper-case?          | abs           | symbol->string |
+| denominator           | char-lower-case?          | gcd           | string->symbol |
+| sqrt                  | char-alphabetic?          | lcm           | string->list   |
+| expt                  | char-numeric?             | 1+            | list->string   |
+| ceiling               | char-alphanumeric?        | 1-            | char->integer  |
+| floor                 | char-whitespace?          | list          | integer->char  |
+| truncate              | string-copy               | list-ref      |                |
+| round                 | string-append             | null?         |                |
+| exp                   | load                      | sum           |                |
+| log                   | file-exists?              | product       |                |
+| sin                   | delete-file               | map           |                |
+| cos                   | system*                   | filter        |                |
+| tan                   | get-environment-variable  | reverse       |                |
+| asin                  | get-environment-variables | length        |                |
+| acos                  | open-binary-input-file    | max           |                |
+| atan                  | open-binary-output-file   | min           |                |
+| number->string        | open-input-file           | list-tail     |                |
+| string->number        | open-output-file          | list-head     |                |
+| id                    | read                      | list-ref      |                |
+| curry                 | read-u8                   | memq          |                |
+| foldr                 | read-line                 | memv          |                |
+| foldl                 | read-char                 | member        |                |
+| unfold                | read-all                  | assq          |                |
+| reduce                | write                     | assv          |                |
+| call-with-input-file  | display                   | assoc         |                |
+| call-with-output-file | newline                   | char=?        |                |
+| println               | write-string              | char<?        |                |
+| compose               | close-port                | char>?        |                |
+
 ** Notes about implementation
 *** What is not included?
 - Functions that provide mutability
