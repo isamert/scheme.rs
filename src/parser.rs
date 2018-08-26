@@ -6,7 +6,7 @@ use utils::fraction::Fraction;
 use lexer::Token;
 use procedure::ProcedureData;
 use evaluator;
-use env::{EnvRef, VarName};
+use env::EnvRef;
 use port::PortData;
 use expander::expand;
 use serr::{SErr, SResult};

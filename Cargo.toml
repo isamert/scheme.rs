@@ -1,6 +1,6 @@
 [package]
-name = "rustlisp"
+name = "scheme-rs"
 version = "0.1.0"
-authors = ["isa"]
+authors = ["İsa Mert Gürbüz"]
 
 [dependencies]

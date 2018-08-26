@@ -7,7 +7,7 @@ Rust packages.
 I was studying about compilers and interpreters. On the other hand I was
 trying to learn Rust. So I combined those two and this project has emerged.
 There are thousands of fast, mature and feature-rich Scheme interpreters that
-you can use. This project is not intended to be usable in production altough
+you can use. This project is not intended to be usable in production although
 I use it for my personal scripts and one can embed /scheme.rs/ into ones
 project to provide scripting facilities.
 
@@ -42,8 +42,20 @@ project to provide scripting facilities.
 (display (fib 60)) ; prints 1548008755920
 #+END_SRC
 
+** Usage
+Run it using cargo:
+#+BEGIN_SRC bash
+cd scheme.rs
+cargo run
+#+END_SRC
+
+This will fire up REPL. You can also run files directly:
+#+BEGIN_SRC bash
+cargo run filename.scm
+#+END_SRC
+
 ** List of functions
-Most of these functions are implemented in Rust.
+Fair amount of these functions are implemented in Rust.
 
 | define                | <                         | procedure?    | char<=?        |
 | set!                  | >                         | boolean?      | char>=?        |
@@ -71,41 +83,46 @@ Most of these functions are implemented in Rust.
 | expt                  | char-numeric?             | 1+            | list->string   |
 | ceiling               | char-alphanumeric?        | 1-            | char->integer  |
 | floor                 | char-whitespace?          | list          | integer->char  |
-| truncate              | string-copy               | list-ref      |                |
-| round                 | string-append             | null?         |                |
-| exp                   | load                      | sum           |                |
-| log                   | file-exists?              | product       |                |
-| sin                   | delete-file               | map           |                |
-| cos                   | system*                   | filter        |                |
-| tan                   | get-environment-variable  | reverse       |                |
-| asin                  | get-environment-variables | length        |                |
-| acos                  | open-binary-input-file    | max           |                |
-| atan                  | open-binary-output-file   | min           |                |
-| number->string        | open-input-file           | list-tail     |                |
-| string->number        | open-output-file          | list-head     |                |
-| id                    | read                      | list-ref      |                |
-| curry                 | read-u8                   | memq          |                |
-| foldr                 | read-line                 | memv          |                |
-| foldl                 | read-char                 | member        |                |
-| unfold                | read-all                  | assq          |                |
-| reduce                | write                     | assv          |                |
-| call-with-input-file  | display                   | assoc         |                |
-| call-with-output-file | newline                   | char=?        |                |
-| println               | write-string              | char<?        |                |
-| compose               | close-port                | char>?        |                |
+| truncate              | string-copy               | list-ref      | caar           |
+| round                 | string-append             | null?         | cadr           |
+| exp                   | load                      | sum           | cdar           |
+| log                   | file-exists?              | product       | cddr           |
+| sin                   | delete-file               | map           | caaar          |
+| cos                   | system*                   | filter        | caadr          |
+| tan                   | get-environment-variable  | reverse       | cadar          |
+| asin                  | get-environment-variables | length        | caddr          |
+| acos                  | open-binary-input-file    | max           | cdaar          |
+| atan                  | open-binary-output-file   | min           | cdadr          |
+| number->string        | open-input-file           | list-tail     | cddar          |
+| string->number        | open-output-file          | list-head     | cdddr          |
+| id                    | read                      | list-ref      | caaaar         |
+| curry                 | read-u8                   | memq          | caaadr         |
+| foldr                 | read-line                 | memv          | caadar         |
+| foldl                 | read-char                 | member        | caaddr         |
+| unfold                | read-all                  | assq          | cadaar         |
+| reduce                | write                     | assv          | cadadr         |
+| call-with-input-file  | display                   | assoc         | caddar         |
+| call-with-output-file | newline                   | char=?        | cadddr         |
+| println               | write-string              | char<?        | cdaaar         |
+| compose               | close-port                | char>?        | cdaadr         |
+
+List may not be complete.
 
 ** Notes about implementation
+*** Extras
+- Brackets can be used instead of parenthesis.
+
 *** What is not included?
 - Functions that provide mutability
 - Hygienic macros (I may implement this in the future)
-- call-with-current-continuation and it's derivatives
-    - I don't of if it's possible to implement these functions only by using
+- ~call-with-current-continuation~ and it's derivatives
+    - I don't know if it's possible to implement these functions only by using
       Rust's stack.
 
 *** Proper tail recursion
 Tail calls are optimized but this implementation does not reflect the
 standard fully. Because there are no macros, functions like ~and~, ~or~,
-~cond~, ~let~ etc. are implemented as seperate procedures. So a procedure with
+~cond~, ~let~ etc. are implemented as separate procedures. So a procedure with
 ~and~ in it's tail call may blow up the stack. Regardless of macro
 implementation, I may fix this in the future simply by expanding required
 functions before evaluation.

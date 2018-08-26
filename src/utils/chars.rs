@@ -21,7 +21,7 @@ static UTF8_CHAR_WIDTH: [u8; 256] = [
 ];
 
 fn utf8_char_width(b: u8) -> usize {
-    return UTF8_CHAR_WIDTH[b as usize] as usize;
+    UTF8_CHAR_WIDTH[b as usize] as usize
 }
 
 fn read_one_byte(reader: &mut Read) -> Option<io::Result<u8>> {

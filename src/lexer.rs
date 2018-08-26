@@ -105,12 +105,8 @@ pub fn tokenize<I>(iter: &mut Peekable<I>) -> Vec<Token>
 where I: Iterator<Item = char> {
     let mut tokens: Vec<Token> = vec![];
 
-    loop {
-        if let Some(x) = tokenize_single(iter) {
-            tokens.push(x)
-        } else {
-            break;
-        }
+    while let Some(x) = tokenize_single(iter) {
+        tokens.push(x)
     }
 
     tokens
