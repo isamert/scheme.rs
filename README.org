@@ -25,11 +25,12 @@ project to provide scripting facilities.
 
 (fizzbuzz 1 100)
 
-
-;; Read a line from file and print it
-(call-with-input-file "file.txt"
-  (λ (file)
-    (println (read-line file))))
+;; Read two lines from file and print them
+(define file (open-input-file "file.txt"))
+(display (read-line file))
+(newline)
+(display (read-line file))
+(newline)
 
 ;; Tail recursive fibanocci
 (define (fib n)
