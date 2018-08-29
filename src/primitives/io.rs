@@ -1,8 +1,7 @@
 use lexer::TokenIterator;
-use parser::{SExpr, parse_single};
 use evaluator::Args;
+use parser::{SExpr, parse_single};
 use port::{PortData, current_input_port, current_output_port};
-use env::EnvRefT;
 use serr::{SErr, SResult};
 
 //

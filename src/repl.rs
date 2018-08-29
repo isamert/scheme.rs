@@ -4,7 +4,6 @@ use std::io::prelude::*;
 use lexer;
 use parser;
 use env::EnvRef;
-use env::EnvRefT;
 
 pub fn run(env: &EnvRef) {
     let mut i = 0;

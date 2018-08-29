@@ -91,16 +91,6 @@ macro_rules! schr(
 );
 
 #[macro_export]
-macro_rules! slazy(
-    ($e: expr) => {
-        {
-            use parser::SExpr;
-            SExpr::Lazy($e.into())
-        }
-    }
-);
-
-#[macro_export]
 macro_rules! quasiquote(
     ($expr: expr) => {
         slist![ssymbol!("quasiquote"), $expr]

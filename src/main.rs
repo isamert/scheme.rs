@@ -17,13 +17,13 @@ mod repl;
 use std::env::args;
 use std::fs::read_to_string;
 
-use env::Env;
+use env::{Env, EnvRef};
 use lexer::tokenize;
 use parser::parse;
 
 fn main() {
     let args = args().collect::<Vec<_>>();
-    let env = Env::with_values(Env::null(), primitives::env()).into_ref();
+    let env = Env::with_values(EnvRef::null(), primitives::env()).into_ref();
     match primitives::load_prelude(&env) {
         Err(e) => println!("{}", e),
         _ => (),

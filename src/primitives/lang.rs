@@ -4,7 +4,6 @@ use parser::SExprs;
 use evaluator::Args;
 use evaluator::Extra;
 use procedure::ProcedureData;
-use env::EnvRefT;
 use env::EnvRef;
 use env::Env;
 use serr::{SErr, SResult};
@@ -64,7 +63,8 @@ pub fn let_star(args: Args) -> SResult<SExpr> {
 }
 
 pub fn let_rec(args: Args) -> SResult<SExpr> {
-    let_generic(args, |expr, _, _| Ok(slazy!(expr.clone())))
+    // FIXME: (letrec ([x y] [y x]) 3) will fail
+    let_star(args)
 }
 
 pub fn quote(args: Args) -> SResult<SExpr> {
@@ -215,7 +215,7 @@ where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SResult<SExpr
     let parent_env = args.env();
     let (bindings, body) = args.own_one_rest()?;
 
-    let env = Env::new(parent_env.clone())
+    let env = Env::new(parent_env.clone_ref())
         .into_ref();
     let bindings_list = bindings.into_list()?;
 

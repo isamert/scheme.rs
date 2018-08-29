@@ -1,6 +1,5 @@
 use env::Env;
 use env::EnvRef;
-use env::EnvRefT;
 use lexer::Token;
 use parser::SExpr;
 use parser::SExprs;

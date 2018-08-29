@@ -20,7 +20,6 @@ pub enum SExpr {
     DottedList(Vec<SExpr>, Box<SExpr>),
     Procedure(ProcedureData),
     Port(PortData),
-    Lazy(Box<SExpr>),
     Unspecified
 }
 
@@ -142,13 +141,6 @@ impl SExpr {
     pub fn is_ellipsis(&self) -> bool {
         match self {
             SExpr::Atom(Token::Ellipsis) => true,
-            _ => false
-        }
-    }
-
-    pub fn is_lazy(&self) -> bool {
-        match self {
-            SExpr::Lazy(_) => true,
             _ => false
         }
     }

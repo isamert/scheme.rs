@@ -5,7 +5,6 @@ use lexer::Token;
 use parser::SExpr;
 use parser::SExprs;
 use env::EnvRef;
-use env::EnvRefT;
 use procedure::ProcedureData;
 use serr::{SErr, SResult};
 
@@ -14,10 +13,7 @@ where F: FnMut(&mut SExpr)->SResult<T> {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
             env.with_mut_ref(x, |result| {
-                match result {
-                    SExpr::Lazy(_) => f(&mut result.eval(env)?),
-                    _ => f(result)
-                }
+                f(result)
             })
         },
         x => f(&mut eval(x, env)?)
@@ -29,10 +25,7 @@ where F: FnMut(&SExpr)->SResult<T> {
     match sexpr {
         SExpr::Atom(Token::Symbol(ref x)) => {
             env.with_ref(x, |result| {
-                match result {
-                    SExpr::Lazy(_) => f(&result.eval(env)?),
-                    _ => f(result)
-                }
+                f(result)
             })
         },
         x => f(&eval(x, env)?)
@@ -45,19 +38,11 @@ pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
     loop {
         match sexpr {
             SExpr::Atom(Token::Symbol(x)) => {
-                let result = env.get(&x)?;
-
-                match result {
-                    SExpr::Lazy(_) => sexpr = result,
-                    _ => return Ok(result)
-                };
+                return env.get(&x)
             },
             x@SExpr::Atom(_) | x@SExpr::Procedure(_)
                 | x@SExpr::Port(_) | x@SExpr::Unspecified => {
                 return Ok(x)
-            },
-            SExpr::Lazy(expr) => {
-                sexpr = *expr;
             },
             list@SExpr::DottedList(_,_) => {
                 fn flatten(list: SExpr) -> SExprs {
@@ -178,15 +163,15 @@ impl DerefMut for Args {
 
 impl Args {
     pub fn new_with_extra(vec: SExprs, extra: Extra, env: &EnvRef) -> Args {
-        Args { env: env.clone(), extra, vec }
+        Args { env: env.clone_ref(), extra, vec }
     }
 
     pub fn new(vec: SExprs, env: &EnvRef) -> Args {
-        Args { env: env.clone(), extra: Extra::Nothing, vec }
+        Args { env: env.clone_ref(), extra: Extra::Nothing, vec }
     }
 
     pub fn env(&self) -> EnvRef {
-        self.env.clone()
+        self.env.clone_ref()
     }
 
     pub fn into_iter(self) -> IntoIter<SExpr> {
