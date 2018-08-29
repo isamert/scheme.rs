@@ -25,7 +25,6 @@ project to provide scripting facilities.
 
 (fizzbuzz 1 100)
 
-
 ;; Read a line from file and print it
 (call-with-input-file "file.txt"
   (λ (file)
