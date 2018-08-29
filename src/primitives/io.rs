@@ -20,43 +20,36 @@ fn get_path_from_args(args: Args) -> SResult<String> {
 }
 
 macro_rules! call_read_fn(
-    ($args: ident, $fn: ident) => {
-        {
-            if $args.len() == 0 {
-                let (_size, result) = current_input_port().$fn()?;
-                Ok(result)
-            } else {
-                let (_size, result) = $args.get(0)
-                    .ok_or_else(|| SErr::WrongArgCount(1, 0))?
-                    .eval_mut_ref(&$args.env, |port_expr| {
-                        port_expr.as_port_mut()?
-                            .$fn()
-                    })?;
+    ($args: ident, $fn: ident) => {{
+        if $args.len() == 0 {
+            let (_size, result) = current_input_port().$fn()?;
+            Ok(result)
+        } else {
+            let (_size, result) = $args.evaled()?
+                .own_one()?
+                .as_port_mut()?
+                .$fn()?;
 
-                Ok(result)
-            }
+            Ok(result)
         }
-    };
+    }};
 );
 
 macro_rules! call_write_fn(
-    ($args: ident, $fn: ident, $thing: expr) => {
-        {
-            if $args.len() <= 1 {
-                current_output_port().$fn(&$thing)?;
-            } else if $args.len() > 1 {
-                $args.get(1)
-                    .ok_or_else(|| SErr::WrongArgCount(1, 0))?
-                    .eval_mut_ref(&$args.env, |port_expr| {
-                        let port = port_expr.as_port_mut()?;
-                        port.$fn(&$thing)?;
-                        Ok(SExpr::Unspecified)
-                    })?;
-            }
-
-            Ok(SExpr::Unspecified)
+    ($args: ident, $fn: ident, $thing: expr) => {{
+        if $args.len() <= 1 {
+            current_output_port().$fn(&$thing)?;
+        } else if $args.len() == 1 {
+            $args.evaled()?
+                .own_one()?
+                .as_port_mut()?
+                .$fn(&$thing)?;
+        } else {
+            bail!(WrongArgCount => 1 as usize, $args.len())
         }
-    };
+
+        Ok(SExpr::Unspecified)
+    }};
 );
 
 //
@@ -89,13 +82,13 @@ pub fn read(args: Args) -> SResult<SExpr> {
 
     if args.len() == 0 {
         current_input_port().with_chars(parse_chars!())
+    } else if args.len() == 0 {
+        args.evaled()?
+            .own_one()?
+            .as_port_mut()?
+            .with_chars(parse_chars!())
     } else {
-        args.get(0)
-            .ok_or_else(|| SErr::WrongArgCount(1, 0))?
-            .eval_mut_ref(&args.env, |port_expr| {
-                port_expr.as_port_mut()?
-                    .with_chars(parse_chars!())
-            })
+        bail!(WrongArgCount => 1 as usize, args.len())
     }
 }
 
@@ -116,21 +109,18 @@ pub fn read_u8(args: Args) -> SResult<SExpr> {
 }
 
 pub fn read_all(args: Args) -> SResult<SExpr> {
-    args.get(0)
-        .ok_or_else(|| SErr::WrongArgCount(1, 0))?
-        .eval_mut_ref(&args.env, |port_expr| {
-            let port = port_expr.as_port_mut()?;
+    let mut port_expr = args.evaled()?.own_one()?;
+    let port = port_expr.as_port_mut()?;
 
-            if port.is_textual() && port.is_input() {
-                let (_size, string) = port.read_all_str()?;
-                Ok(sstr!(string))
-            } else if port.is_binary() && port.is_input() {
-                let (_size, u8s) = port.read_all_u8()?;
-                Ok(SExpr::List(u8s.into_iter().map(|u| sint!(i64::from(u))).collect()))
-            } else {
-                bail!(TypeMismatch => "a textual or binary input port", SExpr::Port(port.clone()))
-            }
-        })
+    if port.is_textual() && port.is_input() {
+        let (_size, string) = port.read_all_str()?;
+        Ok(sstr!(string))
+    } else if port.is_binary() && port.is_input() {
+        let (_size, u8s) = port.read_all_u8()?;
+        Ok(SExpr::List(u8s.into_iter().map(|u| sint!(i64::from(u))).collect()))
+    } else {
+        bail!(TypeMismatch => "a textual or binary input port", SExpr::Port(port.clone()))
+    }
 }
 
 pub fn write(args: Args) -> SResult<SExpr> {
@@ -173,24 +163,15 @@ pub fn display(args: Args) -> SResult<SExpr> {
 }
 
 pub fn close_port(args: Args) -> SResult<SExpr> {
-    let mut remove = false;
-    args.get(0)
-        .ok_or_else(|| SErr::WrongArgCount(1, 0))?
-        .eval_ref(&args.env, |port_expr| match port_expr {
-            SExpr::Port(_) => {
-                remove = true;
-                Ok(())
-            },
-            x => bail!(TypeMismatch => "port", x)
-        })?;
+    let env = args.env();
+    let id = args.own_one()?;
+    let remove = id.eval(&env)?.is_port();
 
-    // We can't directly remove it inside closure above, because env is
-    // already borrowed, we can't borrow it twice mutably.
     if remove {
-        let id = args[0].as_symbol();
+        let id = id.as_symbol();
         if id.is_ok() {
             let id_ = id.unwrap().clone();
-            args.env.set(id_, SExpr::Port(PortData::Closed))?;
+            env.set(id_, SExpr::Port(PortData::Closed))?;
         } else {
             // This means port is created on the fly.
             // And it will get out of scope by itself.

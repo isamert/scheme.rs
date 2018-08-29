@@ -6,52 +6,49 @@ use std::io::{BufReader, BufWriter, Stdin, Stdout};
 
 use serr::{SErr, SResult};
 use utils::chars::Chars;
+use utils::{new_rc_ref_cell, RcRefCell};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PortData {
-    TextualFileInput(String, BufReader<File>),
-    TextualFileOutput(String, BufWriter<File>),
-    BinaryFileInput(String, BufReader<File>),
-    BinaryFileOutput(String, BufWriter<File>),
-    StdInput(Stdin),
-    StdOutput(Stdout),
+    TextualFileInput(String, RcRefCell<BufReader<File>>),
+    TextualFileOutput(String, RcRefCell<BufWriter<File>>),
+    BinaryFileInput(String, RcRefCell<BufReader<File>>),
+    BinaryFileOutput(String, RcRefCell<BufWriter<File>>),
+    StdInput(RcRefCell<Stdin>),
+    StdOutput(RcRefCell<Stdout>),
     Closed
 }
 
 impl PartialEq for PortData {
-    fn eq(&self, _rhs: &Self) -> bool {
-        // FIXME: what should I do here?
-        true
-    }
-}
-
-impl Clone for PortData {
-    fn clone(&self) -> Self {
-        panic!("this should not happen.")
+    fn eq(&self, rhs: &Self) -> bool {
+        match (self, rhs) {
+            (PortData::TextualFileInput(s,r), PortData::TextualFileInput(rs,rr))
+                | (PortData::BinaryFileInput(s,r), PortData::BinaryFileInput(rs, rr)) => {
+                    s == rs && &*r as *const _ == &*rr as *const _
+            }
+            (PortData::TextualFileOutput(s,r), PortData::TextualFileOutput(rs,rr))
+                | (PortData::BinaryFileOutput(s,r), PortData::BinaryFileOutput(rs, rr)) => {
+                    s == rs && &*r as *const _ == &*rr as *const _
+            },
+            (PortData::StdInput(r), PortData::StdInput(rr)) => {
+                    &*r as *const _ == &*rr as *const _
+            },
+            (PortData::StdOutput(r), PortData::StdOutput(rr)) => {
+                    &*r as *const _ == &*rr as *const _
+            },
+            _ => false
+        }
     }
 }
 
 #[macro_export]
 macro_rules! port_read_str_fn(
-    ($br: ident, $fn: ident) => {
-        {
-            let mut result = String::new();
-            let size = $br.$fn(&mut result)?;
-            Ok((size, result))
-        }
-    };
-);
-
-
-#[macro_export]
-macro_rules! port_read_chr(
-    ($br: ident) => {
-        {
-            let mut chr = [0; 1];
-            $br.read_exact(&mut chr)?;
-            Ok((1, chr[0] as char))
-        }
-    };
+    ($br: ident, $fn: ident) => {{
+        let br = &mut *$br.borrow_mut();
+        let mut result = String::new();
+        let size = br.$fn(&mut result)?;
+        Ok((size, result))
+    }};
 );
 
 impl PortData {
@@ -60,7 +57,7 @@ impl PortData {
             .read(true)
             .open(path)?;
 
-        Ok(PortData::TextualFileInput(path.to_string(), BufReader::new(file)))
+        Ok(PortData::TextualFileInput(path.to_string(), new_rc_ref_cell(BufReader::new(file))))
     }
 
 
@@ -70,7 +67,7 @@ impl PortData {
             .write(true)
             .open(path)?;
 
-        Ok(PortData::TextualFileOutput(path.to_string(), BufWriter::new(file)))
+        Ok(PortData::TextualFileOutput(path.to_string(), new_rc_ref_cell(BufWriter::new(file))))
     }
 
     pub fn new_binary_file_input(path: &str) -> SResult<PortData> {
@@ -78,7 +75,7 @@ impl PortData {
             .read(true)
             .open(path)?;
 
-        Ok(PortData::BinaryFileInput(path.to_string(), BufReader::new(file)))
+        Ok(PortData::BinaryFileInput(path.to_string(), new_rc_ref_cell(BufReader::new(file))))
     }
 
     pub fn new_binary_file_output(path: &str) -> SResult<PortData> {
@@ -87,7 +84,7 @@ impl PortData {
             .write(true)
             .open(path)?;
 
-        Ok(PortData::BinaryFileOutput(path.to_string(), BufWriter::new(file)))
+        Ok(PortData::BinaryFileOutput(path.to_string(), new_rc_ref_cell(BufWriter::new(file))))
     }
 
     //
@@ -102,15 +99,6 @@ impl PortData {
         }
     }
 
-    pub fn read_char(&mut self) -> SResult<(usize, char)> {
-        // FIXME: this only reads 1 u8 and casts it to char
-        match self {
-            PortData::TextualFileInput(_, br) => port_read_chr!(br),
-            PortData::StdInput(br) => port_read_chr!(br),
-            _x => bail!(WrongPort => "read-char", "TODO:PORT_NAME_HERE")
-        }
-    }
-
     pub fn read_all_str(&mut self) -> SResult<(usize, String)> {
         match self {
             PortData::TextualFileInput(_, br) => port_read_str_fn!(br, read_to_string),
@@ -119,9 +107,28 @@ impl PortData {
         }
     }
 
+    pub fn read_char(&mut self) -> SResult<(usize, char)> {
+        // FIXME: this only reads 1 u8 and casts it to char
+        macro_rules! port_read_chr(
+            ($br: ident) => {{
+                let br = &mut *$br.borrow_mut();
+                let mut chr = [0; 1];
+                br.read_exact(&mut chr)?;
+                Ok((1, chr[0] as char))
+            }};
+        );
+
+        match self {
+            PortData::TextualFileInput(_, br) => port_read_chr!(br),
+            PortData::StdInput(br) => port_read_chr!(br),
+            _x => bail!(WrongPort => "read-char", "TODO:PORT_NAME_HERE")
+        }
+    }
+
     pub fn read_u8(&mut self) -> SResult<(usize, u8)> {
         match self {
             PortData::BinaryFileInput(_, br) => {
+                let br = &mut *br.borrow_mut();
                 let mut u8s = [0; 1];
                 br.read_exact(&mut u8s)?;
 
@@ -134,6 +141,7 @@ impl PortData {
     pub fn read_all_u8(&mut self) -> SResult<(usize, Vec<u8>)> {
         match self {
             PortData::BinaryFileInput(_, br) => {
+                let br = &mut *br.borrow_mut();
                 let mut u8s = vec![];
                 let size = br.read_to_end(&mut u8s)?;
 
@@ -144,17 +152,18 @@ impl PortData {
     }
 
     pub fn with_chars<F, T>(&mut self, f: F) -> SResult<T>
-    where F: FnOnce(&mut Iterator<Item=char>) -> SResult<T>,
-          {
+    where F: FnOnce(&mut Iterator<Item=char>) -> SResult<T> {
+        macro_rules! with_chars(
+            ($br: ident) => {{
+                let br = &mut *$br.borrow_mut();
+                let mut chars = Chars::new(br);
+                f(&mut chars)
+            }};
+        );
+
         match self {
-            PortData::TextualFileInput(_, br) => {
-                let mut chars = Chars::new(br);
-                f(&mut chars)
-            },
-            PortData::StdInput(br) => {
-                let mut chars = Chars::new(br);
-                f(&mut chars)
-            },
+            PortData::TextualFileInput(_, br) => with_chars!(br),
+            PortData::StdInput(br) => with_chars!(br),
             _x => bail!(WrongPort => "chars", "TODO:PORT_NAME_HERE")
         }
     }
@@ -162,15 +171,17 @@ impl PortData {
     // Write functions
     //
     pub fn write_string(&mut self, string: &str) -> SResult<()> {
+        macro_rules! write_string(
+            ($br: ident) => {{
+                let br = &mut *$br.borrow_mut();
+                write!(br, "{}", string)?;
+                br.flush()?;
+            }};
+        );
+
         match self {
-            PortData::TextualFileOutput(_,br) => {
-                write!(br, "{}", string)?;
-                br.flush()?;
-            },
-            PortData::StdOutput(br) => {
-                write!(br, "{}", string)?;
-                br.flush()?;
-            },
+            PortData::TextualFileOutput(_,br) => write_string!(br),
+            PortData::StdOutput(br) => write_string!(br),
             _x => bail!(WrongPort => "write-string", "TODO:PORT_NAME_HERE")
         };
 
@@ -220,11 +231,11 @@ impl PortData {
 
 pub fn current_input_port() -> PortData {
     // TODO: current_input should be changable
-    PortData::StdInput(io::stdin())
+    PortData::StdInput(new_rc_ref_cell(io::stdin()))
 }
 
 pub fn current_output_port() -> PortData {
     // TODO: current_output should be changable
-    PortData::StdOutput(io::stdout())
+    PortData::StdOutput(new_rc_ref_cell(io::stdout()))
 }
 

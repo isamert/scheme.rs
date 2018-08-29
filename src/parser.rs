@@ -179,6 +179,13 @@ impl SExpr {
         }
     }
 
+    pub fn is_port(&self) -> bool {
+        match self {
+            SExpr::Port(_) => true,
+            _ => false
+        }
+    }
+
     pub fn is_boolean(&self) -> bool {
         match self {
             SExpr::Atom(Token::Boolean(_)) => true,

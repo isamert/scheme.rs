@@ -7,6 +7,13 @@ pub mod radix;
 
 use std::vec::IntoIter;
 use std::iter::Peekable;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+pub type RcRefCell<T> = Rc<RefCell<T>>;
+pub fn new_rc_ref_cell<T>(x: T) -> RcRefCell<T> {
+    Rc::new(RefCell::new(x))
+}
 
 pub trait GentleIterator<I: Iterator> {
     fn take_until<F>(&mut self, predicate: F) -> IntoIter<I::Item>
