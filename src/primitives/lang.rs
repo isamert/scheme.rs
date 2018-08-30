@@ -239,3 +239,7 @@ where F: (FnMut(&SExpr,/*env:*/ &EnvRef,/*parent_env:*/&EnvRef) -> SResult<SExpr
 
     result.unwrap()
 }
+
+pub fn exit(args: Args) -> SResult<SExpr> {
+    ::std::process::exit(0);
+}
