@@ -39,7 +39,7 @@ pub fn convert_type(args: Args) -> SResult<SExpr> {
     Ok(match typ {
         Atom(Symbol(ref t)) if t == "symbol" => match arg {
             x@Atom(Symbol(_)) => x,
-            Atom(Str(x)) => ssymbol!(x),
+            x@Atom(Str(_)) => ssymbol!(x.into_str()?),
             Atom(Chr(x)) => ssymbol!(x.to_string()),
             x => bail!(Cast => "symbol", x)
         },
@@ -52,7 +52,8 @@ pub fn convert_type(args: Args) -> SResult<SExpr> {
                 schr!(result)
             },
             Atom(Str(x)) => {
-                let result = x.chars()
+                let result = x.borrow()
+                    .chars()
                     .next()
                     .ok_or_else(|| SErr::new_generic("Can't convert empty string to char."))?;
 
@@ -88,7 +89,8 @@ pub fn convert_type(args: Args) -> SResult<SExpr> {
         },
         Atom(Symbol(ref t)) if t == "list" => match arg {
             Atom(Str(x)) => {
-                let result = x.chars()
+                let result = x.borrow()
+                    .chars()
                     .map(|c| schr!(c))
                     .collect();
 

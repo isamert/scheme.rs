@@ -1,8 +1,10 @@
 use std::iter::Peekable;
 use std::ops::Not;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
 use utils::fraction::Fraction;
+use utils::RcRefCell;
 use lexer::Token;
 use procedure::ProcedureData;
 use evaluator;
@@ -20,7 +22,7 @@ pub enum SExpr {
     DottedList(Vec<SExpr>, Box<SExpr>),
     Procedure(ProcedureData),
     Port(PortData),
-    Unspecified
+    Unspecified,
 }
 
 impl PartialOrd for SExpr {
@@ -62,43 +64,43 @@ impl<'a> From<&'a mut SExpr> for SExpr {
 
 impl From<i64> for SExpr {
     fn from(i: i64) -> Self {
-        SExpr::Atom(Token::Integer(i))
+        sint!(i)
     }
 }
 
 impl From<f64> for SExpr {
     fn from(i: f64) -> Self {
-        SExpr::Atom(Token::Float(i))
+        sfloat!(i)
     }
 }
 
 impl From<Fraction> for SExpr {
     fn from(i: Fraction) -> Self {
-        SExpr::Atom(Token::Fraction(i))
+        sfrac!(i)
     }
 }
 
 impl From<char> for SExpr {
     fn from(c: char) -> Self {
-        SExpr::Atom(Token::Chr(c))
+        schr!(c)
     }
 }
 
 impl From<bool> for SExpr {
     fn from(b: bool) -> Self {
-        SExpr::Atom(Token::Boolean(b))
+        sbool!(b)
     }
 }
 
 impl From<usize> for SExpr {
     fn from(u: usize) -> Self {
-        SExpr::Atom(Token::Integer(u as i64))
+        sint!(u as i64)
     }
 }
 
 impl From<String> for SExpr {
     fn from(s: String) -> Self {
-        SExpr::Atom(Token::Str(s))
+        sstr!(s)
     }
 }
 
@@ -215,10 +217,17 @@ impl SExpr {
         }
     }
 
-    pub fn as_symbol(&self) -> SResult<String> {
+    pub fn as_symbol(&self) -> SResult<&String> {
         match self {
-            SExpr::Atom(Token::Symbol(x)) => Ok(x.to_string()),
-            x => bail!(TypeMismatch => "string", x)
+            SExpr::Atom(Token::Symbol(x)) => Ok(x),
+            x => bail!(TypeMismatch => "symbol", x)
+        }
+    }
+
+    pub fn as_str(&self) -> SResult<RcRefCell<String>> {
+        match self {
+            SExpr::Atom(Token::Str(x)) => Ok(Rc::clone(x)),
+            x => bail!(TypeMismatch => "symbol", x)
         }
     }
 
@@ -235,14 +244,6 @@ impl SExpr {
             x => bail!(TypeMismatch => "procedure", x)
         }
     }
-
-    pub fn as_mut_string(&mut self) -> SResult<&mut String> {
-        match self {
-            SExpr::Atom(Token::Str(x)) => Ok(x),
-            x => bail!(TypeMismatch => "procedure", x)
-        }
-    }
-
 
     // Transforms
     pub fn into_symbol(self) -> SResult<String> {
@@ -261,7 +262,18 @@ impl SExpr {
 
     pub fn into_str(self) -> SResult<String> {
         match self {
-            SExpr::Atom(Token::Str(x)) => Ok(x),
+            SExpr::Atom(Token::Str(x)) => {
+                if  Rc::strong_count(&x) == 1 {
+                    Ok(Rc::try_unwrap(x).unwrap().into_inner())
+                } else {
+                    // We have more than one strong reference to this string
+                    // So just return a copy
+                    // FIXME: It's probably strong_count > 1 everytime because
+                    // eval function clones the given expression right away
+                    // Maybe change eval function so that it takes ownership?
+                    Ok(x.borrow().clone())
+                }
+            },
             x => bail!(TypeMismatch => "string", x)
         }
     }

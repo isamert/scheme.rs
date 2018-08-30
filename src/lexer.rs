@@ -1,5 +1,6 @@
 use std::iter::Peekable;
 use std::cmp::Ordering;
+use utils::{new_rc_ref_cell, RcRefCell};
 
 use utils::GentleIterator;
 use utils::AndOr;
@@ -17,7 +18,7 @@ pub enum Token {
     Float(f64),
     Boolean(bool),
     Chr(char),
-    Str(String),
+    Str(RcRefCell<String>),
     Dot,
     Ellipsis,
     Quote,
@@ -175,7 +176,7 @@ where I: Iterator<Item = char> {
         .take_until(|c| *c != '"')
         .collect();
     iter.next(); // Consume the closing "
-    Some(Token::Str(value))
+    Some(Token::Str(new_rc_ref_cell(value)))
 }
 
 fn parse_hash<I>(iter: &mut Peekable<I>) -> Option<Token>

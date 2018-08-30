@@ -1,5 +1,6 @@
 use std::fmt;
 
+use env::EnvRef;
 use lexer::Token;
 use parser::SExpr;
 use procedure::ProcedureData;
@@ -27,7 +28,7 @@ impl fmt::Display for Token {
             Token::Fraction(x) => format!("{}/{}", x.n, x.d),
             Token::Boolean(x) => format_bool(x).to_string(),
             Token::Chr(x)     => format!("#\\{}", x),
-            Token::Str(x)     => format!("\"{}\"", x),
+            Token::Str(x)     => format!("\"{}\"", x.borrow()),
         };
 
         fmt.write_str(&s);

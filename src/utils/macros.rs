@@ -67,6 +67,27 @@ macro_rules! sint(
     }
 );
 
+#[macro_export]
+macro_rules! sfloat(
+    ($e: expr) => {
+        {
+            use parser::SExpr;
+            use lexer::Token;
+            SExpr::Atom(Token::Float($e.into()))
+        }
+    }
+);
+
+#[macro_export]
+macro_rules! sfrac(
+    ($e: expr) => {
+        {
+            use parser::SExpr;
+            use lexer::Token;
+            SExpr::Atom(Token::Fraction($e.into()))
+        }
+    }
+);
 
 #[macro_export]
 macro_rules! sstr(
@@ -74,7 +95,8 @@ macro_rules! sstr(
         {
             use parser::SExpr;
             use lexer::Token;
-            SExpr::Atom(Token::Str($e.into()))
+            use utils::new_rc_ref_cell;
+            SExpr::Atom(Token::Str(new_rc_ref_cell($e.into())))
         }
     }
 );

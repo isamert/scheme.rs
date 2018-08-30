@@ -35,6 +35,7 @@ where F: FnMut(&SExpr)->SResult<T> {
 pub fn eval(sexpr_: &SExpr, env_: &EnvRef) -> SResult<SExpr> {
     let mut sexpr = sexpr_.clone();
     let mut env = env_.clone_ref();
+
     loop {
         match sexpr {
             SExpr::Atom(Token::Symbol(x)) => {
@@ -224,6 +225,19 @@ impl Args {
         Ok((x1,x2,x3))
     }
 
+    pub fn own_four(self) -> SResult<(SExpr, SExpr, SExpr, SExpr)> {
+        let max = 4;
+        if self.len() > max {
+            bail!(WrongArgCount => max, self.len())
+        }
+
+        let mut iter = self.vec.into_iter();
+        let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 0))?;
+        let x2 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 1))?;
+        let x3 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 2))?;
+        let x4 = iter.next().ok_or_else(|| SErr::WrongArgCount(max, 3))?;
+        Ok((x1,x2,x3,x4))
+    }
     pub fn own_one_rest(self) -> SResult<(SExpr, SExprs)> {
         let mut iter = self.vec.into_iter();
         let x1 = iter.next().ok_or_else(|| SErr::WrongArgCount(1, 0))?;

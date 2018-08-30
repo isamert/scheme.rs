@@ -170,6 +170,12 @@ pub const PRELUDE: &'static str = "
 (define (string-ref s i) (convert-type 'chr (string-copy s i (+ i 1))))
 (define (string . xs) (convert-type 'str xs))
 
+(define (string-set! str k chr)
+  (string-replace-range! str k (+ k 1) (convert-type 'str chr)))
+(define (string-fill! str chr)
+  (define len (string-length str))
+  (string-replace-range! str 0 len (make-string len chr)))
+
 (define symbol->string (curry convert-type 'str))
 (define string->symbol (curry convert-type 'symbol))
 (define string->list (curry convert-type 'list)) ;; FIXME: string->list string start end

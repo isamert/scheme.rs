@@ -88,7 +88,6 @@ pub fn env() -> EnvValues {
         "append" => list::append,
         "list-copy" => list::list_copy,
 
-        "string-append"         => call_str_fun!(to_uppercase),
         "string-upcase"         => call_str_fun!(to_uppercase),
         "string-downcase"       => call_str_fun!(to_lowercase),
         "string-length"         => call_str_fun!(len),
@@ -102,6 +101,8 @@ pub fn env() -> EnvValues {
         "char-whitespace?"      => call_chr_fun!(is_whitespace),
         "string-copy"           => string::string_copy,
         "string-append"         => string::string_append,
+        "string-replace-range!" => string::string_replace_range_em,
+        "make-string"           => string::make_string,
 
         "load"         => system::load,
         "file-exists?" => system::file_exists_qm,

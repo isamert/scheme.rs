@@ -69,3 +69,36 @@ pub fn string_append(args: Args) -> SResult<SExpr> {
 
     Ok(sstr!(result))
 }
+
+pub fn string_replace_range_em(args: Args) -> SResult<SExpr> {
+    let (string_, start_, end_, replacement_) = args.evaled()?.own_four()?;
+    let start = start_.into_int()? as usize;
+    let end = end_.into_int()? as usize;
+    let replacement = replacement_.into_str()?;
+
+    let string = string_.as_str()?;
+    string.borrow_mut().replace_range(start..end, &replacement);
+    Ok(SExpr::Unspecified)
+}
+
+
+pub fn make_string(args: Args) -> SResult<SExpr> {
+    let evaled = args.evaled()?;
+    if evaled.len() == 1 {
+        let len = evaled.own_one()?
+            .into_int()?;
+
+        Ok(sstr!(String::with_capacity(len as usize)))
+    } else if evaled.len() == 2 {
+        let (len_, chr_) = evaled.own_two()?;
+        let len = len_.into_int()?;
+        let chr = chr_.into_chr()?;
+        let mut string = String::with_capacity(len as usize);
+        for _ in 0..len as usize {
+            string.push(chr);
+        }
+        Ok(sstr!(string))
+    } else {
+        bail!(WrongArgCount => 2 as usize, evaled.len())
+    }
+}
