@@ -40,7 +40,7 @@ pub fn env() -> EnvValues {
         "letrec"      => lang::let_rec,
         "quote"       => lang::quote,
         "quasiquote"  => lang::quasiquote,
-        "unquote"     => lang::unquote,
+        "exit"        => lang::exit,
 
         "eqv?"   => equivalence::eqv_qm,
         "eq?"    => equivalence::eq_qm,

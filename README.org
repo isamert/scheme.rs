@@ -53,6 +53,36 @@ This will fire up REPL. You can also run files directly:
 cargo run filename.scm
 #+END_SRC
 
+** Notes about implementation
+*** Extras
+- Brackets can be used instead of parenthesis.
+
+*** What is not included?
+- Mutable lists
+- Vectors (Lists are implemented in terms of vectors)
+- Hygienic macros
+- ~call-with-current-continuation~ and it's derivatives
+
+*** Proper tail recursion
+Tail calls are optimized but this implementation does not reflect the
+standard fully. Because there are no macros, functions like ~and~, ~or~,
+~cond~, ~let~ etc. are implemented as separate procedures. So a procedure with
+~and~ in it's tail call may blow up the stack. Regardless of macro
+implementation, I may fix this in the future simply by expanding required
+functions before evaluation.
+
+** TODO
+- [ ] Mutable lists
+- [ ] Hygienic macros
+- [ ] Add useful SFRI's like:
+  - [ ] SRFI-9 (Record types)
+  - [ ] SRFI-6 (String ports)
+  - [ ] SRFI-1 (List library, some of the functions are already available)
+  - [ ] SRFI-13 (String library)
+  - [ ] SRFI-88 (Keyword objects)
+- Adding a basic VM with garbage collector may be an long term goal (which will
+allow implementation of cal/cc).
+
 ** List of functions
 Fair amount of these functions are implemented in Rust.
 
@@ -106,22 +136,3 @@ Fair amount of these functions are implemented in Rust.
 | compose               | close-port                | char>?        | cdaadr         |
 
 List may not be complete.
-
-** Notes about implementation
-*** Extras
-- Brackets can be used instead of parenthesis.
-
-*** What is not included?
-- Functions that provide mutability
-- Hygienic macros (I may implement this in the future)
-- ~call-with-current-continuation~ and it's derivatives
-    - I don't know if it's possible to implement these functions only by using
-      Rust's stack.
-
-*** Proper tail recursion
-Tail calls are optimized but this implementation does not reflect the
-standard fully. Because there are no macros, functions like ~and~, ~or~,
-~cond~, ~let~ etc. are implemented as separate procedures. So a procedure with
-~and~ in it's tail call may blow up the stack. Regardless of macro
-implementation, I may fix this in the future simply by expanding required
-functions before evaluation.
