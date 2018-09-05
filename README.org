@@ -71,11 +71,7 @@ standard fully. Because there are no macros, functions like ~and~, ~or~,
 implementation, I may fix this in the future simply by expanding required
 functions before evaluation.
 
-<<<<<<< HEAD
 ** TODO Goals
-=======
-** TODO
->>>>>>> fac8a69fd2e4118b320d33f792c46bbee47bf861
 - [ ] Mutable lists
 - [ ] Hygienic macros
 - [ ] Add useful SFRI's like:
@@ -84,13 +80,8 @@ functions before evaluation.
   - [ ] SRFI-1 (List library, some of the functions are already available)
   - [ ] SRFI-13 (String library)
   - [ ] SRFI-88 (Keyword objects)
-<<<<<<< HEAD
 - Adding a basic VM with garbage collector may be a long term goal (which will
   allow implementation of cal/cc).
-=======
-- Adding a basic VM with garbage collector may be an long term goal (which will
-allow implementation of cal/cc).
->>>>>>> fac8a69fd2e4118b320d33f792c46bbee47bf861
 
 ** List of functions
 Fair amount of these functions are implemented in Rust.
