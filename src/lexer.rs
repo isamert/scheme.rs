@@ -118,7 +118,7 @@ where I: Iterator<Item = char> {
 //
 fn parse_whitespace<I>(iter: &mut Peekable<I>) -> bool
 where I: Iterator<Item = char> {
-    if check_chr(iter, ' ') || check_chr(iter, '\n') {
+    if check_chr(iter, ' ') || check_chr(iter, '\n') || check_chr(iter, '\t') {
         iter.next();
         true
     } else {
@@ -265,3 +265,14 @@ fn check_chr<I>(iter: &mut Peekable<I>, chr: char) -> bool
 where I: Iterator<Item = char> {
     check(iter, |x| x == chr)
 }
+
+#[cfg(test)]
+mod testing {
+    #[test]
+    fn verify_whitespace() {
+        assert!(super::parse_whitespace(&mut "\t".chars().peekable()));
+        assert!(super::parse_whitespace(&mut " ".chars().peekable()));
+        assert!(super::parse_whitespace(&mut "\n".chars().peekable()));
+    }
+}
+
